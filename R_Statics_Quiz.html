@@ -21,9 +21,9 @@
                     colors: {
                         'bauhaus-black': '#121212',
                         'bauhaus-white': '#fdfbf7',
-                        'bauhaus-red': '#cc3333',
-                        'bauhaus-blue': '#2a5599',
-                        'bauhaus-yellow': '#eebb22',
+                        'bauhaus-red': '#d03020', /* 少し鮮やかに調整 */
+                        'bauhaus-blue': '#1a5fb4', /* 少し深めに調整 */
+                        'bauhaus-yellow': '#f5c211',
                         'bauhaus-gray': '#e5e5e5',
                     },
                     animation: {
@@ -46,23 +46,33 @@
     </script>
     <style>
         body { background-color: #fdfbf7; color: #121212; }
-        .btn-hover-effect { transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .btn-hover-effect:hover { transform: translateY(-2px); box-shadow: 4px 4px 0px #121212; }
-        .btn-hover-effect:active { transform: translateY(0); box-shadow: 0px 0px 0px #121212; }
+        
+        /* ボタンのエフェクト: 影をなくし、色反転のみにする */
+        .btn-flat {
+            transition: all 0.2s ease;
+        }
+        .btn-flat:active {
+            transform: scale(0.98);
+        }
+        
+        /* 幾何学背景 */
         .geo-shape { position: absolute; z-index: -1; opacity: 0.6; }
+        
+        /* 数式の折り返し防止 */
+        .math-inline { white-space: nowrap; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden font-sans">
 
-    <!-- Geometric Background -->
+    <!-- Geometric Background (Lighter & Cleaner) -->
     <div class="fixed inset-0 pointer-events-none overflow-hidden">
-        <div class="geo-shape bg-bauhaus-red w-64 h-64 rounded-full -top-10 -left-10 mix-blend-multiply opacity-10"></div>
-        <div class="geo-shape bg-bauhaus-blue w-96 h-96 -bottom-20 -right-20 rotate-12 mix-blend-multiply opacity-10"></div>
-        <div class="geo-shape bg-bauhaus-yellow w-48 h-48 bottom-1/4 left-10 rounded-none mix-blend-multiply opacity-10"></div>
+        <div class="geo-shape bg-bauhaus-red w-64 h-64 rounded-full -top-10 -left-10 mix-blend-multiply opacity-5"></div>
+        <div class="geo-shape bg-bauhaus-blue w-96 h-96 -bottom-20 -right-20 rotate-12 mix-blend-multiply opacity-5"></div>
+        <div class="geo-shape bg-bauhaus-yellow w-48 h-48 bottom-1/4 left-10 rounded-none mix-blend-multiply opacity-5"></div>
     </div>
 
     <!-- Main App Container -->
-    <main class="w-full max-w-3xl bg-white shadow-2xl border-2 border-bauhaus-black z-10 relative overflow-hidden flex flex-col min-h-[600px]">
+    <main class="w-full max-w-3xl bg-white border-4 border-bauhaus-black z-10 relative overflow-hidden flex flex-col min-h-[600px] md:min-h-[700px]">
         
         <!-- HEADER -->
         <header class="bg-bauhaus-black text-white p-6 flex justify-between items-end">
@@ -81,39 +91,42 @@
         </header>
 
         <!-- CONTENT AREA -->
-        <div class="flex-grow p-6 md:p-10 relative">
+        <div class="flex-grow p-6 md:p-10 relative flex flex-col">
             
             <!-- SCREEN: START -->
-            <div id="screen-start" class="flex flex-col justify-center h-full animate-fade-in">
-                <div class="mb-8 text-center">
+            <div id="screen-start" class="flex flex-col justify-center flex-grow animate-fade-in py-8">
+                <div class="mb-10 text-center">
                     <h2 class="text-2xl font-bold mb-2">学習コースを選択</h2>
                     <p class="text-gray-500 text-sm">講義順（第1回〜第8回）に出題されます。</p>
                 </div>
-                <div class="grid grid-cols-2 gap-4 max-w-md mx-auto w-full" id="mode-buttons-container">
+                <!-- グリッドレイアウトの調整: スマホは縦、タブレット以上は2列 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto w-full" id="mode-buttons-container">
                     <!-- Buttons injected by JS Engine -->
                 </div>
             </div>
 
             <!-- SCREEN: QUESTION -->
-            <div id="screen-question" class="hidden flex-col h-full">
-                <div class="mb-4">
-                    <span id="q-tag" class="inline-block bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 mb-4 border border-gray-200"></span>
-                    <h3 id="q-text" class="text-2xl md:text-3xl font-bold leading-snug tracking-tight text-bauhaus-black min-h-[120px] flex items-center"></h3>
+            <div id="screen-question" class="hidden flex-col flex-grow h-full">
+                <div class="mb-6 flex-grow">
+                    <span id="q-tag" class="inline-block bg-white text-bauhaus-black border border-bauhaus-black text-xs font-bold px-3 py-1 mb-4"></span>
+                    <h3 id="q-text" class="text-xl md:text-3xl font-bold leading-relaxed tracking-tight text-bauhaus-black flex items-start"></h3>
                 </div>
-                <div class="grid grid-cols-2 gap-6 mt-auto">
-                    <button onclick="ENGINE.submitAnswer(true)" class="btn-hover-effect h-40 border-4 border-bauhaus-blue text-bauhaus-blue hover:bg-bauhaus-blue hover:text-white flex flex-col items-center justify-center gap-2 bg-white">
-                        <span class="text-5xl font-black">○</span>
-                        <span class="text-sm font-bold tracking-widest uppercase">TRUE</span>
+                
+                <!-- Answer Buttons: Simple Outlines -->
+                <div class="grid grid-cols-2 gap-4 md:gap-8 mt-auto pt-4">
+                    <button onclick="ENGINE.submitAnswer(true)" class="btn-flat min-h-[140px] md:min-h-[160px] border-4 border-bauhaus-blue text-bauhaus-blue bg-white hover:bg-bauhaus-blue hover:text-white flex flex-col items-center justify-center gap-3">
+                        <span class="text-5xl md:text-6xl font-black leading-none">○</span>
+                        <span class="text-xs md:text-sm font-bold tracking-widest uppercase">TRUE / 正しい</span>
                     </button>
-                    <button onclick="ENGINE.submitAnswer(false)" class="btn-hover-effect h-40 border-4 border-bauhaus-red text-bauhaus-red hover:bg-bauhaus-red hover:text-white flex flex-col items-center justify-center gap-2 bg-white">
-                        <span class="text-5xl font-black">×</span>
-                        <span class="text-sm font-bold tracking-widest uppercase">FALSE</span>
+                    <button onclick="ENGINE.submitAnswer(false)" class="btn-flat min-h-[140px] md:min-h-[160px] border-4 border-bauhaus-red text-bauhaus-red bg-white hover:bg-bauhaus-red hover:text-white flex flex-col items-center justify-center gap-3">
+                        <span class="text-5xl md:text-6xl font-black leading-none">×</span>
+                        <span class="text-xs md:text-sm font-bold tracking-widest uppercase">FALSE / 誤り</span>
                     </button>
                 </div>
             </div>
 
             <!-- SCREEN: FEEDBACK -->
-            <div id="screen-feedback" class="hidden flex-col h-full animate-slide-up">
+            <div id="screen-feedback" class="hidden flex-col flex-grow h-full animate-slide-up">
                 <div class="flex items-center gap-4 mb-6 border-b-2 border-gray-100 pb-4">
                     <div id="fb-icon" class="w-16 h-16 flex-shrink-0 flex items-center justify-center rounded-full text-white text-3xl font-bold"></div>
                     <div>
@@ -122,15 +135,23 @@
                     </div>
                 </div>
                 <div class="flex-grow overflow-y-auto pr-2 mb-6">
-                    <div class="prose prose-lg text-gray-700">
+                    <div class="prose prose-lg text-gray-800">
                         <p id="fb-text" class="leading-relaxed"></p>
                     </div>
                 </div>
-                <button onclick="ENGINE.nextQuestion()" id="next-btn" class="w-full py-5 bg-bauhaus-black text-white font-bold hover:bg-gray-800 transition-colors flex items-center justify-center gap-3 text-lg btn-hover-effect"></button>
+                <div class="space-y-6 mt-auto">
+                    <button onclick="ENGINE.nextQuestion()" id="next-btn" class="btn-flat w-full py-5 bg-bauhaus-black text-white font-bold hover:bg-gray-800 transition-colors flex items-center justify-center gap-3 text-lg border-2 border-bauhaus-black"></button>
+                    <!-- Quit Button: Minimal Text -->
+                    <div class="text-center">
+                        <button onclick="ENGINE.resetApp()" class="text-xs text-gray-400 hover:text-bauhaus-black font-bold tracking-widest uppercase py-2 px-4 transition-colors">
+                            Quit / 最初に戻る
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- SCREEN: RESULT -->
-            <div id="screen-result" class="hidden flex-col justify-center h-full items-center text-center animate-fade-in">
+            <div id="screen-result" class="hidden flex-col justify-center flex-grow items-center text-center animate-fade-in">
                 <h2 class="text-5xl font-black mb-2 tracking-tighter">FINISH</h2>
                 <div class="w-16 h-2 bg-bauhaus-yellow mb-8"></div>
                 <div class="mb-12 relative">
@@ -138,7 +159,7 @@
                     <div class="text-xl text-gray-400 font-bold uppercase tracking-widest mt-2">Correct Answers</div>
                     <div class="text-sm text-gray-400 mt-1">out of <span id="res-total">0</span></div>
                 </div>
-                <button onclick="ENGINE.resetApp()" class="w-full max-w-xs py-4 border-2 border-bauhaus-black bg-white text-bauhaus-black font-bold hover:bg-bauhaus-black hover:text-white transition-colors uppercase tracking-widest btn-hover-effect">
+                <button onclick="ENGINE.resetApp()" class="btn-flat w-full max-w-xs py-4 border-4 border-bauhaus-black bg-white text-bauhaus-black font-bold hover:bg-bauhaus-black hover:text-white transition-colors uppercase tracking-widest">
                     Back to Menu
                 </button>
             </div>
@@ -146,35 +167,30 @@
     </main>
 
     <!-- ========================================================================================== -->
-    <!-- 1. CONFIGURATION (設定) -->
+    <!-- 1. CONFIGURATION -->
     <!-- ========================================================================================== -->
     <script>
         const CONFIG = {
-            // クイズモード設定: 表示ラベル, 問題数 ('all'は全問), ホバー時の色クラス
+            // モード設定: 色設定をボーダー色に変更
             modes: [
-                { label: 'QUICK', count: 10,  color: 'group-hover:text-bauhaus-yellow' },
-                { label: 'NORMAL', count: 50,  color: 'group-hover:text-bauhaus-blue' },
-                { label: 'HARD',   count: 100, color: 'group-hover:text-bauhaus-red' },
-                { label: 'FULL',   count: 'all', color: 'group-hover:text-white', bg: 'bg-bauhaus-black', txt: 'text-white' }
+                { label: 'QUICK', count: 10,  cls: 'border-bauhaus-black text-bauhaus-black hover:bg-bauhaus-black hover:text-white' },
+                { label: 'NORMAL', count: 50,  cls: 'border-bauhaus-black text-bauhaus-black hover:border-bauhaus-blue hover:text-bauhaus-blue' },
+                { label: 'HARD',   count: 100, cls: 'border-bauhaus-black text-bauhaus-black hover:border-bauhaus-red hover:text-bauhaus-red' },
+                { label: 'FULL',   count: 'all', cls: 'bg-bauhaus-black text-white border-bauhaus-black hover:bg-gray-800' }
             ],
-            // 講義回数の表示プレフィックス
             lecturePrefix: '第',
             lectureSuffix: '回講義範囲'
         };
     </script>
 
     <!-- ========================================================================================== -->
-    <!-- 2. ENGINE (ロジック) - このセクションは編集不要です -->
+    <!-- 2. ENGINE -->
     <!-- ========================================================================================== -->
     <script>
         const ENGINE = (function() {
-            // State
             let state = { questions: [], currentIndex: 0, score: 0 };
-            
-            // DOM Elements Cache
             let els = {};
 
-            // Initialize DOM elements
             function init() {
                 els = {
                     screens: {
@@ -205,9 +221,9 @@
 
             function renderMenu() {
                 els.menu.innerHTML = CONFIG.modes.map(m => `
-                    <button onclick="ENGINE.startQuiz('${m.count}')" class="btn-hover-effect col-span-1 py-8 border-2 border-bauhaus-black ${m.bg || 'bg-white'} hover:bg-gray-50 text-center group">
-                        <span class="block text-4xl font-black mb-1 ${m.txt || 'text-bauhaus-black'} ${m.color}">${m.count === 'all' ? 'ALL' : m.count}</span>
-                        <span class="text-xs font-bold tracking-widest text-gray-400 ${m.txt ? 'group-hover:text-white' : 'group-hover:text-bauhaus-black'}">${m.label}</span>
+                    <button onclick="ENGINE.startQuiz('${m.count}')" class="btn-flat w-full py-6 border-4 font-bold transition-colors group ${m.cls} flex flex-col items-center justify-center">
+                        <span class="block text-4xl font-black mb-1 leading-none">${m.count === 'all' ? 'ALL' : m.count}</span>
+                        <span class="text-xs font-bold tracking-widest opacity-60">${m.label}</span>
                     </button>
                 `).join('');
             }
@@ -231,32 +247,26 @@
 
             function parseText(text) {
                 if (!text) return "";
-                // Escape HTML special characters first
                 const safeText = text
                     .replace(/&/g, "&amp;")
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;");
 
                 return safeText
-                    // Code: Removed background box, using clean text style
+                    // Code: Simple Mono Font
                     .replace(/`([^`]+)`/g, '<span class="font-mono text-bauhaus-red font-bold mx-1">$1</span>')
-                    .replace(/\$([^$]+)\$/g, '<span class="font-serif italic mx-1">$1</span>')
+                    // Math: No-wrap class
+                    .replace(/\$([^$]+)\$/g, '<span class="font-serif italic px-1 math-inline">$1</span>')
+                    // Bold: Blue text
                     .replace(/\*\*([^*]+)\*\*/g, '<span class="text-bauhaus-blue font-bold">$1</span>');
             }
 
             function startQuiz(countMode) {
-                // Access DATABASE variable (questionPool) which will be defined later
-                if (typeof questionPool === 'undefined') {
-                    alert("Error: Database not loaded.");
-                    return;
-                }
-                
+                if (typeof questionPool === 'undefined') { alert("Error: Database not loaded."); return; }
                 let count = (countMode === 'all') ? questionPool.length : parseInt(countMode);
                 let selected = shuffle([...questionPool]).slice(0, count);
-                selected.sort((a, b) => a.c - b.c); // Sort by lecture
-
+                selected.sort((a, b) => a.c - b.c);
                 state = { questions: selected, currentIndex: 0, score: 0 };
-                
                 els.progress.total.innerText = count;
                 els.progress.area.classList.remove('hidden');
                 showQuestion();
@@ -266,7 +276,6 @@
                 const q = state.questions[state.currentIndex];
                 els.progress.current.innerText = state.currentIndex + 1;
                 els.progress.bar.style.width = `${(state.currentIndex / state.questions.length) * 100}%`;
-                
                 els.q.tag.innerText = `${CONFIG.lecturePrefix}${q.c}${CONFIG.lectureSuffix}`;
                 els.q.text.innerHTML = parseText(q.q);
                 showScreen('question');
@@ -278,22 +287,23 @@
                 if (isCorrect) state.score++;
 
                 const color = isCorrect ? 'bg-bauhaus-blue' : 'bg-bauhaus-red';
+                // Icon: Simple circle without shadow
                 els.fb.icon.className = `w-16 h-16 flex-shrink-0 flex items-center justify-center rounded-full text-white text-3xl font-bold ${color}`;
                 els.fb.icon.innerText = isCorrect ? '○' : '×';
-                els.fb.status.innerText = isCorrect ? 'CORRECT!' : 'WRONG...';
+                els.fb.status.innerText = isCorrect ? 'CORRECT' : 'WRONG';
                 els.fb.status.className = `text-3xl font-black tracking-tight ${isCorrect ? 'text-bauhaus-blue' : 'text-bauhaus-red'}`;
                 
                 els.fb.text.innerHTML = `
-                    <div class="mb-2 font-bold text-sm text-gray-400 uppercase tracking-widest">
+                    <div class="mb-2 font-bold text-sm text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2">
                         Answer: <span class="${q.a ? 'text-bauhaus-blue' : 'text-bauhaus-red'}">${q.a ? 'TRUE / 正しい' : 'FALSE / 誤り'}</span>
                     </div>
-                    ${parseText(q.e)}
+                    <div class="mt-4">${parseText(q.e)}</div>
                 `;
 
                 const isLast = state.currentIndex === state.questions.length - 1;
                 els.fb.btn.innerHTML = isLast 
-                    ? '<span>SHOW RESULTS</span><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>'
-                    : '<span>NEXT QUESTION</span><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>';
+                    ? '<span>SHOW RESULTS</span>'
+                    : '<span>NEXT QUESTION</span>';
                 
                 showScreen('feedback');
                 if(isLast) els.progress.bar.style.width = '100%';
@@ -312,27 +322,14 @@
                 showScreen('result');
             }
 
-            // Expose public methods
             return { init, startQuiz, submitAnswer, nextQuestion, resetApp: () => showScreen('start') };
         })();
     </script>
 
     <!-- ========================================================================================== -->
-    <!-- 3. DATABASE (問題データ) - ここを編集して問題を管理してください -->
+    <!-- 3. DATABASE -->
     <!-- ========================================================================================== -->
     <script>
-        /**
-         * データの定義ルール
-         * * {
-         * c: 数値,    // Category: 講義回数 (1〜8)
-         * q: 文字列,  // Question: 問題文。数式は $x$、コードは `code`、太字は **text** で囲む
-         * a: 真偽値,  // Answer: 正解なら true, 誤りなら false
-         * e: 文字列   // Explanation: 解説文。HTMLタグも使用可能
-         * }
-         * * ↓ 以下のテンプレートをコピーして新しい行に追加してください
-         * { c: 1, q: "問題文", a: true, e: "解説文" },
-         */
-
         const questionPool = [
             
             // --- 第1回: Rの基本操作 ---
