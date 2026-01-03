@@ -2,13 +2,145 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Study Portal</title>
+
+    <style>
+        :root {
+            /* Solarized Light Palette */
+            --base03: #002b36; --base02: #073642; --base01: #586e75;
+            --base00: #657b83; --base0:  #839496; --base1:  #93a1a1;
+            --base2:  #eee8d5; --base3:  #fdf6e3;
+            --yellow: #b58900; --orange: #cb4b16; --red:    #dc322f;
+            --magenta:#d33682; --violet: #6c71c4; --blue:   #268bd2;
+            --cyan:   #2aa198; --green:  #859900;
+        }
+
+        body {
+            background-color: var(--base3);
+            color: var(--base00);
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* コンテナ: 画面中央の「余白」を定義する枠 */
+        .app-container {
+            width: 100%;
+            max-width: 520px;
+            padding: 2rem;
+        }
+
+        /* タイトル: 装飾を削いだ機能的なラベル */
+        h1 {
+            font-size: 0.9rem;
+            color: var(--base1);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            border-bottom: 2px solid var(--base2);
+            padding-bottom: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* リスト: 無駄な点を排除 */
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { margin-bottom: 1rem; }
+
+        /* カード（リンク）: インタラクティブな触覚 */
+        a {
+            display: block;
+            background-color: white;
+            padding: 1.5rem 2rem;
+            color: var(--base01);
+            text-decoration: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden; /* 左側のカラーバー用 */
+        }
+
+        /* ホバー時の挙動: HHKBのような確かな入力感 */
+        a:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            color: var(--base02);
+        }
+
+        /* 左側のアクセントカラーバー（JSで色を制御） */
+        .color-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--base2); /* デフォルト */
+            transition: background-color 0.2s;
+        }
+
+        a:hover .color-bar {
+            background-color: var(--blue); /* ホバー時に変化 */
+        }
+        
+        .arrow { float: right; opacity: 0; transition: opacity 0.2s; }
+        a:hover .arrow { opacity: 1; }
+    </style>
 </head>
 <body>
-    <h1>Study Quizzes</h1>
-    <ul>
-        <li><a href="DS_Quiz.html">Data Science Quiz</a></li>
-        <li><a href="R_Quiz.html">R Programming Quiz</a></li>
-    </ul>
+
+    <div class="app-container">
+        <h1>Study Modules</h1>
+        <ul id="quiz-list-root">
+            </ul>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------
+        // 1. DATA LAYER: 配置するクイズアプリ定義
+        //    (ここを編集するだけでメニューが増減します)
+        // ---------------------------------------------------------
+        const QUIZ_APPS = [
+            { 
+                title: "Data Science Quiz", 
+                url:   "DS_Quiz.html", 
+                color: "var(--magenta)" // 分析的なマゼンタ
+            },
+            { 
+                title: "R Programming Quiz", 
+                url:   "R_Quiz.html", 
+                color: "var(--blue)"    // R言語のブルー
+            },
+            // 将来の拡張用:
+            // { title: "Python Basics", url: "Py_Quiz.html", color: "var(--green)" }
+        ];
+
+        // ---------------------------------------------------------
+        // 2. ENGINE LAYER: インターフェース生成エンジン
+        //    (データを読み込み、HTMLを動的に構築する機能)
+        // ---------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            const rootElement = document.getElementById('quiz-list-root');
+
+            QUIZ_APPS.forEach(app => {
+                // <li>要素の作成
+                const li = document.createElement('li');
+
+                // リンク構造の構築
+                li.innerHTML = `
+                    <a href="${app.url}">
+                        <div class="color-bar" style="background-color: ${app.color}"></div>
+                        ${app.title}
+                        <span class="arrow">→</span>
+                    </a>
+                `;
+
+                // DOMへの配置（レンダリング）
+                rootElement.appendChild(li);
+            });
+        });
+    </script>
 </body>
 </html>
