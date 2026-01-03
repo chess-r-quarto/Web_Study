@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Study Portal</title>
+</head>
+<body>
+    <h1>Study Quizzes</h1>
+    <ul>
+        <li><a href="DS_Quiz.html">Data Science Quiz</a></li>
+        <li><a href="R_Quiz.html">R Programming Quiz</a></li>
+    </ul>
+</body>
+</html>
