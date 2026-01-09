@@ -1,715 +1,423 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, CheckCircle, XCircle, RefreshCw, Trophy, ArrowRight, Brain, Info, Settings, Zap, List } from 'lucide-react';
-
-const FOMCQuizApp_Master200 = () => {
-  // ------------------------------------------------------------
-  // Master Vocabulary Database
-  // Based on the provided FOMC text.
-  // ------------------------------------------------------------
-  const vocabularyDB = [
-    // --- Paragraph 1: Monetary Policy Basics ---
-    {
-      id: 1,
-      word: "Monetary policy",
-      japanese: "金融政策",
-      definition: "Actions undertaken by a central bank to influence money availability and cost.",
-      context: "The term '___' refers to the actions undertaken by a central bank.",
-      type: "Concept"
-    },
-    {
-      id: 2,
-      word: "Central bank",
-      japanese: "中央銀行",
-      definition: "A national bank that provides financial and banking services for its country's government and commercial banking system.",
-      context: "Actions undertaken by a ___, such as the Federal Reserve.",
-      type: "Entity"
-    },
-    {
-      id: 3,
-      word: "Federal Reserve",
-      japanese: "連邦準備制度 (The Fed)",
-      definition: "The central banking system of the United States.",
-      context: "The ___ Act of 1913 gave the system responsibility for setting monetary policy.",
-      type: "Entity"
-    },
-    {
-      id: 4,
-      word: "Influence",
-      japanese: "影響を与える",
-      definition: "To have an effect on the character, development, or behavior of someone or something.",
-      context: "To ___ the availability and cost of money and credit.",
-      type: "Verb"
-    },
-    {
-      id: 5,
-      word: "Availability",
-      japanese: "利用可能性（資金の入手しやすさ）",
-      definition: "The quality of being able to be used or obtained.",
-      context: "To influence the ___ and cost of money.",
-      type: "Noun"
-    },
-    {
-      id: 6,
-      word: "Cost of money",
-      japanese: "お金のコスト（金利）",
-      definition: "The interest rate that must be paid for the use of borrowed money.",
-      context: "To influence the availability and ___.",
-      type: "Concept"
-    },
-    {
-      id: 7,
-      word: "Promote",
-      japanese: "促進する",
-      definition: "To support or actively encourage.",
-      context: "To help ___ national economic goals.",
-      type: "Verb"
-    },
-    {
-      id: 8,
-      word: "National economic goals",
-      japanese: "国家の経済目標",
-      definition: "Objectives such as high employment and stable prices set by the government.",
-      context: "To help promote ___.",
-      type: "Concept"
-    },
-    {
-      id: 9,
-      word: "Federal Reserve Act of 1913",
-      japanese: "1913年連邦準備法",
-      definition: "The legislation that created the Federal Reserve System.",
-      context: "The ___ gave the Federal Reserve responsibility for setting monetary policy.",
-      type: "Law"
-    },
-    {
-      id: 10,
-      word: "Responsibility",
-      japanese: "責任・権限",
-      definition: "The state or fact of having a duty to deal with something.",
-      context: "Gave the Federal Reserve ___ for setting monetary policy.",
-      type: "Noun"
-    },
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOMC Vocabulary Quiz (Test Ver.)</title>
     
-    // --- Paragraph 2: Three Tools & FF Rate ---
-    {
-      id: 11,
-      word: "Three tools",
-      japanese: "3つの手段",
-      definition: "The specific instruments used by the Fed: open market operations, discount rate, and reserve requirements.",
-      context: "The Federal Reserve controls the ___ of monetary policy.",
-      type: "Concept"
-    },
-    {
-      id: 12,
-      word: "Open market operations",
-      japanese: "公開市場操作",
-      definition: "The buying and selling of government securities in the open market.",
-      context: "The Federal Open Market Committee is responsible for ___.",
-      type: "Tool"
-    },
-    {
-      id: 13,
-      word: "Discount rate",
-      japanese: "公定歩合（連銀貸出金利）",
-      definition: "The minimum interest rate set by the Federal Reserve for lending to other banks.",
-      context: "The Board of Governors is responsible for the ___.",
-      type: "Tool"
-    },
-    {
-      id: 14,
-      word: "Reserve requirements",
-      japanese: "預金準備率（所要準備）",
-      definition: "The amount of funds that a bank holds in reserve to ensure that it is able to meet liabilities in case of sudden withdrawals.",
-      context: "The Federal Reserve controls... ___.",
-      type: "Tool"
-    },
-    {
-      id: 15,
-      word: "Board of Governors",
-      japanese: "連邦準備制度理事会",
-      definition: "The governing body of the Federal Reserve System.",
-      context: "The ___ is responsible for the discount rate and reserve requirements.",
-      type: "Entity"
-    },
-    {
-      id: 16,
-      word: "FOMC",
-      japanese: "連邦公開市場委員会",
-      definition: "Federal Open Market Committee; the body responsible for open market operations.",
-      context: "The ___ is responsible for open market operations.",
-      type: "Entity"
-    },
-    {
-      id: 17,
-      word: "Demand and supply",
-      japanese: "需要と供給",
-      definition: "The relationship between the quantity of a commodity that producers wish to sell and the quantity that consumers wish to buy.",
-      context: "The Federal Reserve influences the ___ of balances.",
-      type: "Concept"
-    },
-    {
-      id: 18,
-      word: "Balances",
-      japanese: "資金残高（預金）",
-      definition: "The amount of money held in an account.",
-      context: "Balances that depository institutions hold at Federal Reserve Banks.",
-      type: "Noun"
-    },
-    {
-      id: 19,
-      word: "Depository institutions",
-      japanese: "預託取扱機関（銀行等）",
-      definition: "Financial institutions that accept deposits from the public.",
-      context: "Balances that ___ hold at Federal Reserve Banks.",
-      type: "Entity"
-    },
-    {
-      id: 20,
-      word: "Alter",
-      japanese: "変える・修正する",
-      definition: "To change or cause to change in character or composition.",
-      context: "In this way ___s the federal funds rate.",
-      type: "Verb"
-    },
-    {
-      id: 21,
-      word: "Federal funds rate",
-      japanese: "フェデラル・ファンド金利 (FF金利)",
-      definition: "The interest rate at which depository institutions lend balances to other depository institutions overnight.",
-      context: "The ___ is the interest rate at which depository institutions lend balances... overnight.",
-      type: "Concept"
-    },
-    {
-      id: 22,
-      word: "Overnight",
-      japanese: "翌日物の・一晩の",
-      definition: "For the duration of the night; used in finance to describe very short-term lending.",
-      context: "Lend balances... to other depository institutions ___.",
-      type: "Adverb"
-    },
-
-    // --- Paragraph 3: Chain of Events ---
-    {
-      id: 23,
-      word: "Trigger",
-      japanese: "引き起こす・誘発する",
-      definition: "To cause an event or situation to happen or exist.",
-      context: "Changes in the federal funds rate ___ a chain of events.",
-      type: "Verb"
-    },
-    {
-      id: 24,
-      word: "Chain of events",
-      japanese: "一連の出来事・波及効果",
-      definition: "A series of linked occurrences.",
-      context: "Trigger a ___ that affect other short-term interest rates.",
-      type: "Phrase"
-    },
-    {
-      id: 25,
-      word: "Short-term interest rates",
-      japanese: "短期金利",
-      definition: "Interest rates on loans or financial assets with a short time to maturity.",
-      context: "Affect other ___.",
-      type: "Concept"
-    },
-    {
-      id: 26,
-      word: "Foreign exchange rates",
-      japanese: "外国為替レート",
-      definition: "The value of one currency for the purpose of conversion to another.",
-      context: "Affect... ___.",
-      type: "Concept"
-    },
-    {
-      id: 27,
-      word: "Long-term interest rates",
-      japanese: "長期金利",
-      definition: "Interest rates on financial assets with a long time to maturity, such as 10-year bonds.",
-      context: "Affect... ___.",
-      type: "Concept"
-    },
-    {
-      id: 28,
-      word: "Ultimately",
-      japanese: "最終的に",
-      definition: "Finally; in the end.",
-      context: "And, ___, a range of economic variables.",
-      type: "Adverb"
-    },
-    {
-      id: 29,
-      word: "Economic variables",
-      japanese: "経済変数",
-      definition: "Measures of economic performance, such as GDP, inflation, or unemployment.",
-      context: "A range of ___, including employment, output, and prices.",
-      type: "Concept"
-    },
-    {
-      id: 30,
-      word: "Employment",
-      japanese: "雇用",
-      definition: "The condition of having paid work.",
-      context: "Variables, including ___, output, and prices.",
-      type: "Noun"
-    },
-    {
-      id: 31,
-      word: "Output",
-      japanese: "産出量・生産高",
-      definition: "The amount of something produced by a person, machine, or industry.",
-      context: "Including employment, ___, and prices.",
-      type: "Noun"
-    },
-    {
-      id: 32,
-      word: "Goods and services",
-      japanese: "財とサービス",
-      definition: "The outcome of human efforts to meet the wants and needs of people.",
-      context: "Prices of ___.",
-      type: "Phrase"
-    },
-
-    // --- Paragraph 4: Structure of FOMC ---
-    {
-      id: 33,
-      word: "Consist of",
-      japanese: "～から成る・構成される",
-      definition: "To be composed or made up of.",
-      context: "The FOMC ___ twelve members.",
-      type: "Verb"
-    },
-    {
-      id: 34,
-      word: "Twelve members",
-      japanese: "12名のメンバー",
-      definition: "The number of voting members on the FOMC.",
-      context: "The Federal Open Market Committee (FOMC) consists of ___.",
-      type: "Number"
-    },
-    {
-      id: 35,
-      word: "Federal Reserve Bank of New York",
-      japanese: "ニューヨーク連邦準備銀行",
-      definition: "The specific Reserve Bank whose president is a permanent voting member of the FOMC.",
-      context: "The president of the ___.",
-      type: "Entity"
-    },
-    {
-      id: 36,
-      word: "Remaining",
-      japanese: "残りの",
-      definition: "Left over after others or other parts have been removed, used, or dealt with.",
-      context: "Four of the ___ eleven Reserve Bank presidents.",
-      type: "Adjective"
-    },
-    {
-      id: 37,
-      word: "Term",
-      japanese: "任期",
-      definition: "A fixed or limited period for which something, e.g., office, lasts.",
-      context: "Who serve one-year ___s.",
-      type: "Noun"
-    },
-    {
-      id: 38,
-      word: "Rotating basis",
-      japanese: "輪番制（持ち回り）",
-      definition: "Taking turns in a regular order.",
-      context: "Serve one-year terms on a ___.",
-      type: "Phrase"
-    },
-    {
-      id: 39,
-      word: "Fill",
-      japanese: "（役職を）埋める・充てる",
-      definition: "To appoint a person to hold a post.",
-      context: "The rotating seats are ___ed from the following four groups.",
-      type: "Verb"
-    },
-    {
-      id: 40,
-      word: "Nonvoting",
-      japanese: "投票権のない",
-      definition: "Not having the right to vote.",
-      context: "___ Reserve Bank presidents attend the meetings.",
-      type: "Adjective"
-    },
-    {
-      id: 41,
-      word: "Participate",
-      japanese: "参加する",
-      definition: "To take part in an action or endeavour.",
-      context: "___ in the discussions.",
-      type: "Verb"
-    },
-    {
-      id: 42,
-      word: "Assessment",
-      japanese: "評価・分析",
-      definition: "The evaluation or estimation of the nature, quality, or ability of someone or something.",
-      context: "Contribute to the Committee's ___ of the economy.",
-      type: "Noun"
-    },
-
-    // --- Paragraph 5: Meetings & Goals ---
-    {
-      id: 43,
-      word: "Regularly scheduled",
-      japanese: "定期的に予定された",
-      definition: "Planned to happen at fixed times.",
-      context: "The FOMC holds eight ___ meetings per year.",
-      type: "Adjective"
-    },
-    {
-      id: 44,
-      word: "Appropriate stance",
-      japanese: "適切なスタンス（政策姿勢）",
-      definition: "The suitable position or approach regarding policy.",
-      context: "Determines the ___ of monetary policy.",
-      type: "Phrase"
-    },
-    {
-      id: 45,
-      word: "Long-run goals",
-      japanese: "長期的目標",
-      definition: "Objectives set for a long period of time.",
-      context: "Assesses the risks to its ___.",
-      type: "Concept"
-    },
-    {
-      id: 46,
-      word: "Price stability",
-      japanese: "物価の安定",
-      definition: "A situation where the inflation rate is low and stable.",
-      context: "Goals of ___ and sustainable economic growth.",
-      type: "Goal"
-    },
-    {
-      id: 47,
-      word: "Sustainable economic growth",
-      japanese: "持続可能な経済成長",
-      definition: "Economic growth that can be maintained without creating other significant economic problems.",
-      context: "Goals of price stability and ___.",
-      type: "Goal"
-    },
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    // --- Extra useful words from text ---
-    {
-      id: 48,
-      word: "Authorizations",
-      japanese: "権限付与・認可",
-      definition: "The action or fact of authorizing or being authorized.",
-      context: "FOMC Rules and ___ are available online.",
-      type: "Noun"
-    },
-    {
-      id: 49,
-      word: "Variable",
-      japanese: "変数・変わりやすい要素",
-      definition: "An element, feature, or factor that is liable to vary or change.",
-      context: "A range of economic ___s.",
-      type: "Noun"
-    },
-    {
-      id: 50,
-      word: "Undertaken",
-      japanese: "着手された・実施された",
-      definition: "Committed to begin or attempted.",
-      context: "Actions ___ by a central bank.",
-      type: "Verb"
-    }
-  ];
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  // ------------------------------------------------------------
-  // Question Generation Logic (The "200 Questions" Engine)
-  // ------------------------------------------------------------
-  
-  // Helper to get random wrong answers
-  const getDistractors = (currentWord, type, count = 1) => {
-    // Try to get distractors of same type first
-    let pool = vocabularyDB.filter(item => item.id !== currentWord.id && item.type === type);
-    if (pool.length < count) {
-      pool = vocabularyDB.filter(item => item.id !== currentWord.id);
-    }
-    return pool.sort(() => 0.5 - Math.random()).slice(0, count);
-  };
+    <!-- Google Fonts (Noto Sans JP) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 
-  const generateQuestions = () => {
-    let allQuestions = [];
-    let qId = 1;
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #696969; /* Dim Gray */
+        }
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #696969;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #A9A9A9;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-    vocabularyDB.forEach(item => {
-      const distractors = getDistractors(item, item.type, 3); // Get 3 wrong answers for 4-choice, or 1 for 2-choice
-      
-      // --- Pattern 1: Word to Japanese (Standard) ---
-      allQuestions.push({
-        qId: qId++,
-        type: 'Word -> JP',
-        question: `What is the meaning of "${item.word}"?`,
-        correct: item.japanese,
-        wrong: distractors[0].japanese, // 2-choice style
-        explanation: `"${item.word}" means ${item.japanese}.`,
-        context: item.context
-      });
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
 
-      // --- Pattern 2: Japanese to Word (Reverse) ---
-      allQuestions.push({
-        qId: qId++,
-        type: 'JP -> Word',
-        question: `「${item.japanese}」にあたる英単語は？`,
-        correct: item.word,
-        wrong: distractors[0].word,
-        explanation: `The English term for "${item.japanese}" is "${item.word}".`,
-        context: item.context
-      });
+        // --- アイコンコンポーネント (Lucide代替) ---
+        // 単一ファイルでの動作を保証するため、SVGを直接定義しています
+        const Icons = {
+            BookOpen: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            CheckCircle: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            XCircle: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+            Trophy: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v6a5 5 0 1 1-10 0V4"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>,
+            ArrowRight: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+            RefreshCw: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+            Info: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+            Zap: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        };
 
-      // --- Pattern 3: Definition to Word (Advanced) ---
-      allQuestions.push({
-        qId: qId++,
-        type: 'Def -> Word',
-        question: `Definition: "${item.definition}"`,
-        correct: item.word,
-        wrong: distractors[0].word,
-        explanation: `This definition describes "${item.word}".`,
-        context: item.context
-      });
+        /**
+         * ==============================================================================
+         * セクション 1: UI部 (User Interface)
+         * ------------------------------------------------------------------------------
+         * ユーザーに見える画面描画を担当します。
+         * ロジックは「エンジン部 (useQuizEngine)」から受け取ります。
+         * ==============================================================================
+         */
+        const App = () => {
+            // エンジン部からゲームの状態と操作関数を取得
+            const {
+                gameState,          // 'start', 'playing', 'result'
+                currentQ,           // 現在の問題オブジェクト
+                questionsTotal,     // 総問題数
+                currentIndex,       // 現在のインデックス
+                score,              // スコア
+                shuffledOptions,    // シャッフル済み選択肢
+                isAnswered,         // 回答済みフラグ
+                selectedOptionIndex,// 選択した選択肢のインデックス
+                
+                startGame,          // ゲーム開始関数
+                handleAnswer,       // 回答処理関数
+                nextQuestion,       // 次の問題へ
+                resetGame           // リセット
+            } = useQuizEngine();
 
-      // --- Pattern 4: Context Fill-in-the-blank (Practical) ---
-      // Replace word in context with underlines
-      const blankContext = item.context.replace(item.word, "_______").replace(item.word.toLowerCase(), "_______");
-      allQuestions.push({
-        qId: qId++,
-        type: 'Context',
-        question: `Fill in the blank:\n"${blankContext}"`,
-        correct: item.word,
-        wrong: distractors[0].word,
-        explanation: `The correct word fits the context: "${item.context}"`,
-        context: item.context
-      });
-    });
-
-    // Shuffle all generated questions
-    return allQuestions.sort(() => 0.5 - Math.random());
-  };
-
-  // ------------------------------------------------------------
-  // State Management
-  // ------------------------------------------------------------
-  const [questions, setQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [gameState, setGameState] = useState('start'); // start, playing, result
-  const [shuffledOptions, setShuffledOptions] = useState([]);
-  const [isAnswered, setIsAnswered] = useState(false);
-  const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
-  const [batchSize, setBatchSize] = useState(10); // How many qs per session
-
-  // Initialize
-  useEffect(() => {
-    // Generate the full ~200 question set on mount
-    const fullSet = generateQuestions();
-    // We will slice this set based on user selection in Start Screen
-    setQuestions(fullSet); 
-  }, []);
-
-  // Prepare Options for current question
-  useEffect(() => {
-    if (gameState === 'playing' && questions[currentIndex]) {
-      const currentQ = questions[currentIndex];
-      const options = [
-        { text: currentQ.correct, isCorrect: true },
-        { text: currentQ.wrong, isCorrect: false }
-      ].sort(() => 0.5 - Math.random());
-      
-      setShuffledOptions(options);
-      setIsAnswered(false);
-      setSelectedOptionIndex(null);
-    }
-  }, [currentIndex, gameState, questions]);
-
-  const startGame = (count) => {
-    // Regenerate and shuffle to ensure fresh random distractors/order
-    const fullSet = generateQuestions();
-    const slicedSet = fullSet.slice(0, count);
-    setQuestions(slicedSet);
-    setScore(0);
-    setCurrentIndex(0);
-    setGameState('playing');
-  };
-
-  const handleAnswer = (index, isCorrect) => {
-    if (isAnswered) return;
-    setIsAnswered(true);
-    setSelectedOptionIndex(index);
-    if (isCorrect) setScore(prev => prev + 1);
-  };
-
-  const nextQuestion = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      setGameState('result');
-    }
-  };
-
-  // ------------------------------------------------------------
-  // Components
-  // ------------------------------------------------------------
-
-  // Start Screen
-  if (gameState === 'start') {
-    return (
-      <div className="min-h-screen bg-[#696969] text-white flex flex-col items-center justify-center p-4 font-sans">
-        <div className="bg-white/10 backdrop-blur-md p-10 rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full text-center">
-          <div className="mb-6 flex justify-center">
-            <BookOpen size={64} className="text-yellow-400" />
-          </div>
-          <h1 className="text-4xl font-bold mb-2">FOMC Master 200</h1>
-          <p className="text-gray-300 mb-8">Generated {vocabularyDB.length * 4} unique questions from text.</p>
-          
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <div className="bg-black/20 p-3 rounded-lg text-left">
-              <span className="block text-xs text-gray-400">Total Patterns</span>
-              <span className="font-bold text-yellow-400 text-xl">{vocabularyDB.length * 4} Qs</span>
-            </div>
-             <div className="bg-black/20 p-3 rounded-lg text-left">
-              <span className="block text-xs text-gray-400">Types</span>
-              <span className="font-bold text-white text-sm">Meaning, Reverse, Def, Context</span>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-             <p className="text-sm text-gray-300 mb-2">Select Session Length:</p>
-             <button onClick={() => startGame(10)} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 rounded-xl transition-all border border-white/10 flex justify-between items-center group">
-               <span>Quick 10</span> <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" size={16}/>
-             </button>
-             <button onClick={() => startGame(50)} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 rounded-xl transition-all border border-white/10 flex justify-between items-center group">
-               <span>Standard 50</span> <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" size={16}/>
-             </button>
-             <button onClick={() => startGame(200)} className="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-4 px-6 rounded-xl transition-all shadow-lg flex justify-between items-center transform hover:scale-105">
-               <span>Challenge All (200)</span> <Zap size={20}/>
-             </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Result Screen
-  if (gameState === 'result') {
-    const percentage = Math.round((score / questions.length) * 100);
-    return (
-      <div className="min-h-screen bg-[#696969] text-white flex flex-col items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full text-center">
-          <Trophy size={48} className="mx-auto text-yellow-400 mb-4" />
-          <h2 className="text-3xl font-bold mb-2">Session Complete</h2>
-          <div className="text-6xl font-black text-yellow-400 mb-2">{score} <span className="text-2xl text-white font-normal">/ {questions.length}</span></div>
-          <p className="text-xl text-gray-200 mb-8">{percentage}% Accuracy</p>
-          
-          <button 
-            onClick={() => setGameState('start')}
-            className="w-full bg-white text-[#696969] font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-          >
-            <RefreshCw size={20} /> Back to Menu
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Playing Screen
-  const currentQ = questions[currentIndex];
-  const progress = ((currentIndex + 1) / questions.length) * 100;
-
-  return (
-    <div className="min-h-screen bg-[#696969] text-white flex flex-col items-center justify-center p-4">
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-2 bg-black/20">
-        <div 
-          className="h-full bg-yellow-400 transition-all duration-300 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      <div className="bg-white/10 backdrop-blur-md p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full relative overflow-hidden min-h-[400px] flex flex-col">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6 text-sm text-gray-300 font-mono">
-          <span className="flex items-center gap-2 bg-black/20 px-2 py-1 rounded">
-             Q {currentIndex + 1}/{questions.length}
-             <span className="text-xs text-gray-400 px-1 border-l border-gray-600">{currentQ.type}</span>
-          </span>
-          <span className="bg-yellow-500/20 text-yellow-200 px-3 py-1 rounded-full border border-yellow-500/30">Score: {score}</span>
-        </div>
-
-        {/* Question Area */}
-        <div className="mb-6 flex-grow flex flex-col justify-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 drop-shadow-md text-center leading-snug">
-            {currentQ.question}
-          </h2>
-        </div>
-
-        {/* Options */}
-        <div className="space-y-3 mb-4">
-          {shuffledOptions.map((option, idx) => {
-            let btnClass = "w-full text-left p-4 rounded-xl border transition-all duration-200 relative overflow-hidden ";
-            
-            if (!isAnswered) {
-              btnClass += "bg-white/5 hover:bg-white/20 border-white/10 hover:border-yellow-400/50 cursor-pointer active:scale-95";
-            } else {
-              if (option.isCorrect) {
-                btnClass += "bg-green-600/40 border-green-400 text-green-100";
-              } else if (selectedOptionIndex === idx && !option.isCorrect) {
-                btnClass += "bg-red-600/40 border-red-400 text-red-100 opacity-60";
-              } else {
-                btnClass += "bg-black/10 border-transparent opacity-30";
-              }
+            // --- 1-A. スタート画面 ---
+            if (gameState === 'start') {
+                return (
+                    <div className="min-h-screen text-white flex flex-col items-center justify-center p-4">
+                        <div className="bg-white/10 backdrop-blur-md p-10 rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full text-center">
+                            <div className="mb-6 flex justify-center">
+                                <Icons.BookOpen size={64} className="text-yellow-400" />
+                            </div>
+                            <h1 className="text-4xl font-bold mb-2">FOMC Quiz</h1>
+                            <p className="text-yellow-400 font-bold mb-4 tracking-widest">TEST EDITION</p>
+                            <p className="text-gray-300 mb-8">
+                                データベース登録数: {vocabularyDB.length}語<br/>
+                                <span className="text-xs">※1単語につき4パターンの問題を自動生成</span>
+                            </p>
+                            
+                            <div className="space-y-3">
+                                <button onClick={() => startGame(5)} className="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-4 px-6 rounded-xl transition-all shadow-lg flex justify-between items-center transform hover:scale-105">
+                                    <span>テスト開始 (5問)</span> <Icons.Zap size={20}/>
+                                </button>
+                                <button onClick={() => startGame(20)} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 rounded-xl transition-all border border-white/10 flex justify-between items-center">
+                                    <span>全パターン出題 ({vocabularyDB.length * 4}問)</span> <Icons.ArrowRight size={20}/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
             }
 
+            // --- 1-B. 結果画面 ---
+            if (gameState === 'result') {
+                const percentage = Math.round((score / questionsTotal) * 100);
+                return (
+                    <div className="min-h-screen text-white flex flex-col items-center justify-center p-4">
+                        <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full text-center">
+                            <Icons.Trophy size={48} className="mx-auto text-yellow-400 mb-4" />
+                            <h2 className="text-3xl font-bold mb-2">Test Complete</h2>
+                            <div className="text-6xl font-black text-yellow-400 mb-2">{score} <span className="text-2xl text-white font-normal">/ {questionsTotal}</span></div>
+                            <p className="text-xl text-gray-200 mb-8">{percentage}% Accuracy</p>
+                            
+                            <button 
+                                onClick={resetGame}
+                                className="w-full bg-white text-[#696969] font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Icons.RefreshCw size={20} /> Back to Menu
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // --- 1-C. プレイ画面 ---
+            const progress = ((currentIndex + 1) / questionsTotal) * 100;
+
             return (
-              <button
-                key={idx}
-                onClick={() => handleAnswer(idx, option.isCorrect)}
-                disabled={isAnswered}
-                className={btnClass}
-              >
-                <div className="flex justify-between items-center relative z-10">
-                  <span className="font-bold text-lg">{option.text}</span>
-                  {isAnswered && option.isCorrect && <CheckCircle size={24} className="text-green-400" />}
-                  {isAnswered && selectedOptionIndex === idx && !option.isCorrect && <XCircle size={24} className="text-red-400" />}
+                <div className="min-h-screen text-white flex flex-col items-center justify-center p-4">
+                    {/* プログレスバー */}
+                    <div className="fixed top-0 left-0 w-full h-2 bg-black/20">
+                        <div 
+                            className="h-full bg-yellow-400 transition-all duration-300 ease-out"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-md p-6 md:p-8 rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full relative overflow-hidden min-h-[450px] flex flex-col">
+                        
+                        {/* ヘッダー情報 */}
+                        <div className="flex justify-between items-center mb-6 text-sm text-gray-300 font-mono">
+                            <span className="flex items-center gap-2 bg-black/20 px-2 py-1 rounded">
+                                Q {currentIndex + 1}/{questionsTotal}
+                                <span className="text-xs text-gray-400 px-1 border-l border-gray-600">{currentQ.type}</span>
+                            </span>
+                            <span className="bg-yellow-500/20 text-yellow-200 px-3 py-1 rounded-full border border-yellow-500/30">Score: {score}</span>
+                        </div>
+
+                        {/* 問題文表示エリア */}
+                        <div className="mb-6 flex-grow flex flex-col justify-center">
+                            <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-md text-center leading-snug whitespace-pre-wrap">
+                                {currentQ.question}
+                            </h2>
+                        </div>
+
+                        {/* 選択肢ボタンエリア */}
+                        <div className="space-y-3 mb-4">
+                            {shuffledOptions.map((option, idx) => {
+                                let btnClass = "w-full text-left p-4 rounded-xl border transition-all duration-200 relative overflow-hidden ";
+                                
+                                if (!isAnswered) {
+                                    btnClass += "bg-white/5 hover:bg-white/20 border-white/10 hover:border-yellow-400/50 cursor-pointer active:scale-95";
+                                } else {
+                                    if (option.isCorrect) {
+                                        btnClass += "bg-green-600/40 border-green-400 text-green-100";
+                                    } else if (selectedOptionIndex === idx && !option.isCorrect) {
+                                        btnClass += "bg-red-600/40 border-red-400 text-red-100 opacity-60";
+                                    } else {
+                                        btnClass += "bg-black/10 border-transparent opacity-30";
+                                    }
+                                }
+
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleAnswer(idx, option.isCorrect)}
+                                        disabled={isAnswered}
+                                        className={btnClass}
+                                    >
+                                        <div className="flex justify-between items-center relative z-10">
+                                            <span className="font-bold text-lg">{option.text}</span>
+                                            {isAnswered && option.isCorrect && <Icons.CheckCircle size={24} className="text-green-400" />}
+                                            {isAnswered && selectedOptionIndex === idx && !option.isCorrect && <Icons.XCircle size={24} className="text-red-400" />}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* 解説パネル (回答後に表示) */}
+                        {isAnswered && (
+                            <div className="bg-black/40 rounded-xl p-4 border border-white/10 animate-[fadeIn_0.3s_ease-out]">
+                                <div className="flex items-start gap-3">
+                                    <Icons.Info className="text-yellow-400 flex-shrink-0 mt-1" size={20} />
+                                    <div className="flex-grow">
+                                        <p className="font-bold text-white text-sm mb-1">{currentQ.correct}</p>
+                                        <p className="text-sm text-gray-300 leading-relaxed">
+                                            {currentQ.explanation}
+                                        </p>
+                                        <div className="mt-2 pt-2 border-t border-white/10 text-xs text-gray-400 font-serif italic">
+                                            Context: "{currentQ.context}"
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    onClick={nextQuestion}
+                                    className="mt-3 w-full bg-white text-[#696969] font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    Next <Icons.ArrowRight size={18} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
-              </button>
             );
-          })}
-        </div>
+        };
 
-        {/* Explanation Panel */}
-        {isAnswered && (
-          <div className="bg-black/40 rounded-xl p-4 border border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-start gap-3">
-              <Info className="text-yellow-400 flex-shrink-0 mt-1" size={20} />
-              <div className="flex-grow">
-                <p className="font-bold text-white text-sm mb-1">{currentQ.correct}</p>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  {currentQ.explanation}
-                </p>
-                <div className="mt-2 pt-2 border-t border-white/10 text-xs text-gray-400 font-serif italic">
-                   Context: "{currentQ.context}"
-                </div>
-              </div>
-            </div>
+        /**
+         * ==============================================================================
+         * セクション 2: エンジン部 (Game Engine)
+         * ------------------------------------------------------------------------------
+         * ゲームロジック、問題生成、ステート管理を行うカスタムフック。
+         * 1つの単語データから4パターンの問題を生成するエンジンを含みます。
+         * ==============================================================================
+         */
+        const useQuizEngine = () => {
+            const [gameState, setGameState] = useState('start');
+            const [questions, setQuestions] = useState([]);
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [score, setScore] = useState(0);
             
-            <button 
-              onClick={nextQuestion}
-              className="mt-3 w-full bg-white text-[#696969] font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-            >
-              Next <ArrowRight size={18} />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+            // UI用の一時ステート
+            const [shuffledOptions, setShuffledOptions] = useState([]);
+            const [isAnswered, setIsAnswered] = useState(false);
+            const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
 
-export default FOMCQuizApp_Master200;
+            // --- 2-A. 問題生成エンジン ---
+            const getDistractors = (currentWord, type, count = 1) => {
+                // 同じタイプの単語から誤答を探す
+                let pool = vocabularyDB.filter(item => item.id !== currentWord.id && item.type === type);
+                // 足りなければ全体から探す (DBが小さいテスト時はこちらが頻繁に使われます)
+                if (pool.length < count) {
+                    pool = vocabularyDB.filter(item => item.id !== currentWord.id);
+                }
+                // ランダムに抽出
+                return pool.sort(() => 0.5 - Math.random()).slice(0, count);
+            };
+
+            const generateQuestions = () => {
+                let allQuestions = [];
+                let qId = 1;
+
+                vocabularyDB.forEach(item => {
+                    // テスト用にDBが小さいため、誤答候補は1つだけ取得して2択にします
+                    const distractors = getDistractors(item, item.type, 1);
+                    const wrongAnswer = distractors[0] ? distractors[0] : { japanese: "誤答データ不足", word: "Error" };
+
+                    // パターン1: 英単語 -> 日本語
+                    allQuestions.push({
+                        qId: qId++,
+                        type: 'Word -> JP',
+                        question: `What is the meaning of "${item.word}"?`,
+                        correct: item.japanese,
+                        wrong: wrongAnswer.japanese,
+                        explanation: `"${item.word}" means ${item.japanese}.`,
+                        context: item.context
+                    });
+
+                    // パターン2: 日本語 -> 英単語
+                    allQuestions.push({
+                        qId: qId++,
+                        type: 'JP -> Word',
+                        question: `「${item.japanese}」にあたる英単語は？`,
+                        correct: item.word,
+                        wrong: wrongAnswer.word,
+                        explanation: `The English term for "${item.japanese}" is "${item.word}".`,
+                        context: item.context
+                    });
+
+                    // パターン3: 定義 -> 英単語
+                    allQuestions.push({
+                        qId: qId++,
+                        type: 'Def -> Word',
+                        question: `Definition:\n"${item.definition}"`,
+                        correct: item.word,
+                        wrong: wrongAnswer.word,
+                        explanation: `This definition describes "${item.word}".`,
+                        context: item.context
+                    });
+
+                    // パターン4: 穴埋め (Context)
+                    const blankContext = item.context.replace(item.word, "_______").replace(item.word.toLowerCase(), "_______");
+                    allQuestions.push({
+                        qId: qId++,
+                        type: 'Context',
+                        question: `Fill in the blank:\n"${blankContext}"`,
+                        correct: item.word,
+                        wrong: wrongAnswer.word,
+                        explanation: `The correct word fits the context.`,
+                        context: item.context
+                    });
+                });
+
+                return allQuestions.sort(() => 0.5 - Math.random());
+            };
+
+            // --- 2-B. 操作関数 ---
+            const startGame = (count) => {
+                const fullSet = generateQuestions();
+                // 指定された問題数でスライス（最大値は生成された全問題数）
+                const slicedSet = fullSet.slice(0, Math.min(count, fullSet.length));
+                setQuestions(slicedSet);
+                setScore(0);
+                setCurrentIndex(0);
+                setGameState('playing');
+            };
+
+            // 問題切り替え時の選択肢シャッフル
+            useEffect(() => {
+                if (gameState === 'playing' && questions[currentIndex]) {
+                    const currentQ = questions[currentIndex];
+                    const options = [
+                        { text: currentQ.correct, isCorrect: true },
+                        { text: currentQ.wrong, isCorrect: false }
+                    ].sort(() => 0.5 - Math.random());
+                    
+                    setShuffledOptions(options);
+                    setIsAnswered(false);
+                    setSelectedOptionIndex(null);
+                }
+            }, [currentIndex, gameState, questions]);
+
+            const handleAnswer = (index, isCorrect) => {
+                if (isAnswered) return;
+                setIsAnswered(true);
+                setSelectedOptionIndex(index);
+                if (isCorrect) setScore(prev => prev + 1);
+            };
+
+            const nextQuestion = () => {
+                if (currentIndex < questions.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                } else {
+                    setGameState('result');
+                }
+            };
+
+            const resetGame = () => setGameState('start');
+
+            return {
+                gameState, currentQ: questions[currentIndex], questionsTotal: questions.length,
+                currentIndex, score, shuffledOptions, isAnswered, selectedOptionIndex,
+                startGame, handleAnswer, nextQuestion, resetGame
+            };
+        };
+
+        /**
+         * ==============================================================================
+         * セクション 3: 単語データベース (Data)
+         * ------------------------------------------------------------------------------
+         * テスト用に5単語のみ抽出しています。
+         * ここに追加することで問題のバリエーションが増えます。
+         * ==============================================================================
+         */
+        const vocabularyDB = [
+            {
+                id: 1,
+                word: "Monetary policy",
+                japanese: "金融政策",
+                definition: "Actions undertaken by a central bank to influence money availability and cost.",
+                context: "The term 'monetary policy' refers to the actions undertaken by a central bank.",
+                type: "Concept"
+            },
+            {
+                id: 2,
+                word: "Federal Open Market Committee",
+                japanese: "連邦公開市場委員会 (FOMC)",
+                definition: "The body responsible for open market operations in the Federal Reserve System.",
+                context: "The Federal Open Market Committee is responsible for open market operations.",
+                type: "Entity"
+            },
+            {
+                id: 3,
+                word: "Discount rate",
+                japanese: "公定歩合（連銀貸出金利）",
+                definition: "The interest rate charged to commercial banks and other depository institutions for loans received from the Federal Reserve.",
+                context: "The Board of Governors is responsible for the discount rate.",
+                type: "Tool"
+            },
+            {
+                id: 4,
+                word: "Federal funds rate",
+                japanese: "フェデラル・ファンド金利 (FF金利)",
+                definition: "The interest rate at which depository institutions lend balances to each other overnight.",
+                context: "Alters the federal funds rate.",
+                type: "Concept"
+            },
+            {
+                id: 5,
+                word: "Price stability",
+                japanese: "物価の安定",
+                definition: "A state where the price level does not change, or changes very slowly.",
+                context: "Long-run goals of price stability and sustainable economic growth.",
+                type: "Goal"
+            }
+        ];
+
+        // --- レンダリング実行 ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
