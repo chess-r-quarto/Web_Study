@@ -373,47 +373,456 @@
          * ==============================================================================
          */
         const vocabularyDB = [
-            {
-                id: 1,
-                word: "Monetary policy",
-                japanese: "金融政策",
-                definition: "Actions undertaken by a central bank to influence money availability and cost.",
-                context: "The term 'monetary policy' refers to the actions undertaken by a central bank.",
-                type: "Concept"
-            },
-            {
-                id: 2,
-                word: "Federal Open Market Committee",
-                japanese: "連邦公開市場委員会 (FOMC)",
-                definition: "The body responsible for open market operations in the Federal Reserve System.",
-                context: "The Federal Open Market Committee is responsible for open market operations.",
-                type: "Entity"
-            },
-            {
-                id: 3,
-                word: "Discount rate",
-                japanese: "公定歩合（連銀貸出金利）",
-                definition: "The interest rate charged to commercial banks and other depository institutions for loans received from the Federal Reserve.",
-                context: "The Board of Governors is responsible for the discount rate.",
-                type: "Tool"
-            },
-            {
-                id: 4,
-                word: "Federal funds rate",
-                japanese: "フェデラル・ファンド金利 (FF金利)",
-                definition: "The interest rate at which depository institutions lend balances to each other overnight.",
-                context: "Alters the federal funds rate.",
-                type: "Concept"
-            },
-            {
-                id: 5,
-                word: "Price stability",
-                japanese: "物価の安定",
-                definition: "A state where the price level does not change, or changes very slowly.",
-                context: "Long-run goals of price stability and sustainable economic growth.",
-                type: "Goal"
-            }
-        ];
+    // --- Paragraph 1: Definition & Purpose ---
+    {
+        id: 1,
+        word: "Monetary policy",
+        japanese: "金融政策",
+        definition: "Actions undertaken by a central bank to influence money availability and cost.",
+        context: "The term 'monetary policy' refers to the actions undertaken by a central bank.",
+        type: "Concept"
+    },
+    {
+        id: 2,
+        word: "Undertaken",
+        japanese: "（活動などが）実施された・着手された",
+        definition: "Committed to, begun, or attempted (usually a task or responsibility).",
+        context: "Refers to the actions undertaken by a central bank.",
+        type: "Verb"
+    },
+    {
+        id: 3,
+        word: "Central bank",
+        japanese: "中央銀行",
+        definition: "A national bank that provides financial and banking services for its country's government and commercial banking system.",
+        context: "Actions undertaken by a central bank, such as the Federal Reserve.",
+        type: "Entity"
+    },
+    {
+        id: 4,
+        word: "Federal Reserve",
+        japanese: "連邦準備制度 (Fed)",
+        definition: "The central banking system of the United States.",
+        context: "Such as the Federal Reserve, to influence the availability and cost of money.",
+        type: "Entity"
+    },
+    {
+        id: 5,
+        word: "Influence",
+        japanese: "影響を与える",
+        definition: "To have an effect on the character, development, or behavior of someone or something.",
+        context: "To influence the availability and cost of money and credit.",
+        type: "Verb"
+    },
+    {
+        id: 6,
+        word: "Availability",
+        japanese: "利用可能性（資金の入手しやすさ）",
+        definition: "The quality of being able to be used or obtained.",
+        context: "To influence the availability and cost of money.",
+        type: "Noun"
+    },
+    {
+        id: 7,
+        word: "Cost of money",
+        japanese: "お金のコスト（金利）",
+        definition: "The interest rate that must be paid for the use of borrowed money.",
+        context: "To influence the availability and cost of money and credit.",
+        type: "Concept"
+    },
+    {
+        id: 8,
+        word: "Credit",
+        japanese: "信用（貸出・与信）",
+        definition: "The ability of a customer to obtain goods or services before payment, based on the trust that payment will be made in the future.",
+        context: "Cost of money and credit to help promote national economic goals.",
+        type: "Noun"
+    },
+    {
+        id: 9,
+        word: "Promote",
+        japanese: "促進する",
+        definition: "To support or actively encourage; to further the progress of.",
+        context: "To help promote national economic goals.",
+        type: "Verb"
+    },
+    {
+        id: 10,
+        word: "National economic goals",
+        japanese: "国家の経済目標",
+        definition: "Objectives such as maximum employment and stable prices set by the government.",
+        context: "To help promote national economic goals.",
+        type: "Concept"
+    },
+    {
+        id: 11,
+        word: "Federal Reserve Act of 1913",
+        japanese: "1913年連邦準備法",
+        definition: "The legislation that created the Federal Reserve System.",
+        context: "The Federal Reserve Act of 1913 gave the Federal Reserve responsibility.",
+        type: "Law"
+    },
+    {
+        id: 12,
+        word: "Responsibility",
+        japanese: "責任・権限",
+        definition: "The state or fact of having a duty to deal with something.",
+        context: "Gave the Federal Reserve responsibility for setting monetary policy.",
+        type: "Noun"
+    },
+    {
+        id: 13,
+        word: "Setting",
+        japanese: "設定すること・決定すること",
+        definition: "The act of establishing or deciding on a policy or rate.",
+        context: "Responsibility for setting monetary policy.",
+        type: "Verb"
+    },
+
+    // --- Paragraph 2: Tools & Mechanism ---
+    {
+        id: 14,
+        word: "Three tools",
+        japanese: "3つの手段",
+        definition: "The specific instruments used by the Fed: open market operations, discount rate, and reserve requirements.",
+        context: "The Federal Reserve controls the three tools of monetary policy.",
+        type: "Concept"
+    },
+    {
+        id: 15,
+        word: "Open market operations",
+        japanese: "公開市場操作",
+        definition: "The buying and selling of government securities in the open market to expand or contract the amount of money in the banking system.",
+        context: "Open market operations, the discount rate, and reserve requirements.",
+        type: "Tool"
+    },
+    {
+        id: 16,
+        word: "Discount rate",
+        japanese: "公定歩合（連銀貸出金利）",
+        definition: "The interest rate charged to commercial banks and other depository institutions on loans they receive from their regional Federal Reserve Bank.",
+        context: "The discount rate, and reserve requirements.",
+        type: "Tool"
+    },
+    {
+        id: 17,
+        word: "Reserve requirements",
+        japanese: "預金準備率（所要準備）",
+        definition: "The amount of funds that a bank holds in reserve to ensure that it is able to meet liabilities in case of sudden withdrawals.",
+        context: "The discount rate, and reserve requirements.",
+        type: "Tool"
+    },
+    {
+        id: 18,
+        word: "Board of Governors",
+        japanese: "連邦準備制度理事会 (FRB理事会)",
+        definition: "The governing body of the Federal Reserve System, consisting of seven members.",
+        context: "The Board of Governors of the Federal Reserve System is responsible for the discount rate.",
+        type: "Entity"
+    },
+    {
+        id: 19,
+        word: "Federal Open Market Committee",
+        japanese: "連邦公開市場委員会 (FOMC)",
+        definition: "The branch of the Federal Reserve Board that determines the direction of monetary policy.",
+        context: "The Federal Open Market Committee is responsible for open market operations.",
+        type: "Entity"
+    },
+    {
+        id: 20,
+        word: "Demand",
+        japanese: "需要",
+        definition: "The desire of purchasers for a particular commodity or service.",
+        context: "The Federal Reserve influences the demand for, and supply of, balances.",
+        type: "Concept"
+    },
+    {
+        id: 21,
+        word: "Supply",
+        japanese: "供給",
+        definition: "The amount of a commodity, product, or service available and the desire of sellers to sell it.",
+        context: "Influences the demand for, and supply of, balances.",
+        type: "Concept"
+    },
+    {
+        id: 22,
+        word: "Balances",
+        japanese: "資金残高（預金）",
+        definition: "The amount of money held in an account.",
+        context: "Balances that depository institutions hold at Federal Reserve Banks.",
+        type: "Noun"
+    },
+    {
+        id: 23,
+        word: "Depository institutions",
+        japanese: "預託取扱機関（銀行等）",
+        definition: "Financial institutions (like banks) that accept deposits from the public.",
+        context: "Balances that depository institutions hold at Federal Reserve Banks.",
+        type: "Entity"
+    },
+    {
+        id: 24,
+        word: "Alter",
+        japanese: "変える・修正する",
+        definition: "To change or cause to change in character or composition.",
+        context: "In this way alters the federal funds rate.",
+        type: "Verb"
+    },
+    {
+        id: 25,
+        word: "Federal funds rate",
+        japanese: "フェデラル・ファンド金利 (FF金利)",
+        definition: "The interest rate at which depository institutions lend balances to other depository institutions overnight.",
+        context: "In this way alters the federal funds rate.",
+        type: "Concept"
+    },
+    {
+        id: 26,
+        word: "Lend",
+        japanese: "貸す",
+        definition: "To grant to someone the use of something on the understanding that it shall be returned.",
+        context: "Institutions lend balances at the Federal Reserve to other depository institutions.",
+        type: "Verb"
+    },
+    {
+        id: 27,
+        word: "Overnight",
+        japanese: "翌日物の・一晩の",
+        definition: "For the duration of the night; very short-term (usually one day).",
+        context: "Lend balances... to other depository institutions overnight.",
+        type: "Adverb"
+    },
+
+    // --- Paragraph 3: Chain of Events ---
+    {
+        id: 28,
+        word: "Trigger",
+        japanese: "引き起こす・誘発する",
+        definition: "To cause an event or situation to happen or exist.",
+        context: "Changes in the federal funds rate trigger a chain of events.",
+        type: "Verb"
+    },
+    {
+        id: 29,
+        word: "Chain of events",
+        japanese: "一連の出来事・波及効果",
+        definition: "A series of linked occurrences.",
+        context: "Trigger a chain of events that affect other short-term interest rates.",
+        type: "Phrase"
+    },
+    {
+        id: 30,
+        word: "Short-term interest rates",
+        japanese: "短期金利",
+        definition: "Interest rates on loans or financial assets with a short time to maturity.",
+        context: "Affect other short-term interest rates.",
+        type: "Concept"
+    },
+    {
+        id: 31,
+        word: "Foreign exchange rates",
+        japanese: "外国為替レート",
+        definition: "The value of one currency for the purpose of conversion to another.",
+        context: "Foreign exchange rates, long-term interest rates.",
+        type: "Concept"
+    },
+    {
+        id: 32,
+        word: "Long-term interest rates",
+        japanese: "長期金利",
+        definition: "Interest rates on financial assets with a long time to maturity (e.g., 10-year Treasury bonds).",
+        context: "Short-term interest rates... and long-term interest rates.",
+        type: "Concept"
+    },
+    {
+        id: 33,
+        word: "Ultimately",
+        japanese: "最終的に",
+        definition: "Finally; in the end.",
+        context: "And, ultimately, a range of economic variables.",
+        type: "Adverb"
+    },
+    {
+        id: 34,
+        word: "Economic variables",
+        japanese: "経済変数",
+        definition: "Measures of economic performance, such as GDP, inflation, or unemployment.",
+        context: "A range of economic variables, including employment, output, and prices.",
+        type: "Concept"
+    },
+    {
+        id: 35,
+        word: "Employment",
+        japanese: "雇用",
+        definition: "The condition of having paid work.",
+        context: "Including employment, output, and prices.",
+        type: "Noun"
+    },
+    {
+        id: 36,
+        word: "Output",
+        japanese: "産出量・生産高 (GDP)",
+        definition: "The amount of something produced by a person, machine, or industry (often refers to GDP).",
+        context: "Including employment, output, and prices of goods and services.",
+        type: "Noun"
+    },
+    {
+        id: 37,
+        word: "Goods and services",
+        japanese: "財とサービス",
+        definition: "The outcome of human efforts to meet the wants and needs of people.",
+        context: "Prices of goods and services.",
+        type: "Phrase"
+    },
+
+    // --- Paragraph 4: Structure ---
+    {
+        id: 38,
+        word: "Consist of",
+        japanese: "～から成る・構成される",
+        definition: "To be composed or made up of.",
+        context: "The FOMC consists of twelve members.",
+        type: "Verb"
+    },
+    {
+        id: 39,
+        word: "Twelve members",
+        japanese: "12名のメンバー",
+        definition: "The fixed number of voting members on the FOMC.",
+        context: "The FOMC consists of twelve members.",
+        type: "Number"
+    },
+    {
+        id: 40,
+        word: "Federal Reserve Bank of New York",
+        japanese: "ニューヨーク連邦準備銀行",
+        definition: "The most influential Reserve Bank, whose president is a permanent voting member of the FOMC.",
+        context: "The president of the Federal Reserve Bank of New York.",
+        type: "Entity"
+    },
+    {
+        id: 41,
+        word: "Rotating basis",
+        japanese: "輪番制（持ち回り）",
+        definition: "Taking turns in a regular order.",
+        context: "Who serve one-year terms on a rotating basis.",
+        type: "Phrase"
+    },
+    {
+        id: 42,
+        word: "Term",
+        japanese: "任期",
+        definition: "A fixed or limited period for which something, e.g., office, lasts.",
+        context: "Who serve one-year terms.",
+        type: "Noun"
+    },
+    {
+        id: 43,
+        word: "Filled",
+        japanese: "（席や役職が）埋められる",
+        definition: "To appoint a person to hold a post.",
+        context: "The rotating seats are filled from the following four groups.",
+        type: "Verb"
+    },
+    {
+        id: 44,
+        word: "Nonvoting",
+        japanese: "投票権のない",
+        definition: "Not having the right to vote.",
+        context: "Nonvoting Reserve Bank presidents attend the meetings.",
+        type: "Adjective"
+    },
+    {
+        id: 45,
+        word: "Participate",
+        japanese: "参加する",
+        definition: "To take part in an action or endeavour.",
+        context: "Participate in the discussions.",
+        type: "Verb"
+    },
+    {
+        id: 46,
+        word: "Contribute",
+        japanese: "貢献する・寄与する",
+        definition: "To give in order to help achieve or provide something.",
+        context: "Contribute to the Committee's assessment of the economy.",
+        type: "Verb"
+    },
+    {
+        id: 47,
+        word: "Assessment",
+        japanese: "評価・分析",
+        definition: "The evaluation or estimation of the nature, quality, or ability of someone or something.",
+        context: "Committee's assessment of the economy and policy options.",
+        type: "Noun"
+    },
+
+    // --- Paragraph 5: Meetings & Goals ---
+    {
+        id: 48,
+        word: "Regularly scheduled",
+        japanese: "定期的に予定された",
+        definition: "Planned to happen at fixed times.",
+        context: "The FOMC holds eight regularly scheduled meetings per year.",
+        type: "Adjective"
+    },
+    {
+        id: 49,
+        word: "Review",
+        japanese: "検討する・見直す",
+        definition: "To examine or assess something formally.",
+        context: "The Committee reviews economic and financial conditions.",
+        type: "Verb"
+    },
+    {
+        id: 50,
+        word: "Appropriate stance",
+        japanese: "適切なスタンス（政策姿勢）",
+        definition: "The suitable position or approach regarding policy (e.g., hawkish or dovish).",
+        context: "Determines the appropriate stance of monetary policy.",
+        type: "Phrase"
+    },
+    {
+        id: 51,
+        word: "Long-run goals",
+        japanese: "長期的目標",
+        definition: "Objectives set for a long period of time.",
+        context: "Assesses the risks to its long-run goals.",
+        type: "Concept"
+    },
+    {
+        id: 52,
+        word: "Price stability",
+        japanese: "物価の安定",
+        definition: "A situation where the inflation rate is low and stable.",
+        context: "Goals of price stability and sustainable economic growth.",
+        type: "Goal"
+    },
+    {
+        id: 53,
+        word: "Sustainable economic growth",
+        japanese: "持続可能な経済成長",
+        definition: "Economic growth that can be maintained without creating other significant economic problems.",
+        context: "Goals of price stability and sustainable economic growth.",
+        type: "Goal"
+    },
+    {
+        id: 54,
+        word: "Authorizations",
+        japanese: "認可・権限付与",
+        definition: "The action or fact of authorizing or being authorized.",
+        context: "FOMC Rules and Authorizations are available online.",
+        type: "Noun"
+    },
+    {
+        id: 55,
+        word: "Transcripts",
+        japanese: "（会議の）議事録・記録",
+        definition: "A written or printed version of material originally presented in another medium.",
+        context: "Transcripts and other historical materials.",
+        type: "Noun"
+    }
+];
 
         // --- レンダリング実行 ---
         const root = ReactDOM.createRoot(document.getElementById('root'));
