@@ -27,14 +27,14 @@
             margin: 0;
         }
 
-        /* コンテナ: 画面中央の「余白」を定義する枠 */
+        /* コンテナ */
         .app-container {
             width: 100%;
             max-width: 520px;
             padding: 2rem;
         }
 
-        /* タイトル: 装飾を削いだ機能的なラベル */
+        /* タイトル */
         h1 {
             font-size: 0.9rem;
             color: var(--base1);
@@ -45,11 +45,11 @@
             margin-bottom: 2rem;
         }
 
-        /* リスト: 無駄な点を排除 */
+        /* リスト */
         ul { list-style: none; padding: 0; margin: 0; }
         li { margin-bottom: 1rem; }
 
-        /* カード（リンク）: インタラクティブな触覚 */
+        /* カード（リンク） */
         a {
             display: block;
             background-color: white;
@@ -60,17 +60,17 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
-            overflow: hidden; /* 左側のカラーバー用 */
+            overflow: hidden;
         }
 
-        /* ホバー時の挙動: HHKBのような確かな入力感 */
+        /* ホバー時の挙動 */
         a:hover {
             transform: translateX(5px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
             color: var(--base02);
         }
 
-        /* 左側のアクセントカラーバー（JSで色を制御） */
+        /* 左側のアクセントカラーバー */
         .color-bar {
             position: absolute;
             left: 0;
@@ -81,9 +81,7 @@
             transition: background-color 0.2s;
         }
 
-        a:hover .color-bar {
-            background-color: var(--blue); /* ホバー時に変化 */
-        }
+        /* ホバー時にJSで設定した色を適用するためのCSS変数的アプローチはJS側で制御 */
         
         .arrow { float: right; opacity: 0; transition: opacity 0.2s; }
         a:hover .arrow { opacity: 1; }
@@ -94,50 +92,68 @@
     <div class="app-container">
         <h1>Study Modules</h1>
         <ul id="quiz-list-root">
-            </ul>
+            <!-- JSによってリストがここに生成されます -->
+        </ul>
     </div>
 
     <script>
         // ---------------------------------------------------------
-        // 1. DATA LAYER: 配置するクイズアプリ定義
-        //    (ここを編集するだけでメニューが増減します)
+        // 1. DATA LAYER: クイズアプリ定義
         // ---------------------------------------------------------
         const QUIZ_APPS = [
             { 
                 title: "Data Science Quiz", 
                 url:   "DS_Quiz.html", 
-                color: "var(--magenta)" // 分析的なマゼンタ
+                color: "var(--magenta)" // 分析・理論
             },
             { 
                 title: "R Programming Quiz", 
                 url:   "R_Quiz.html", 
-                color: "var(--blue)"    // R言語のブルー
+                color: "var(--blue)"    // プログラミング・実装
             },
-            // 将来の拡張用:
-            // { title: "Python Basics", url: "Py_Quiz.html", color: "var(--green)" }
+            { 
+                title: "Data Management", 
+                url:   "Data_Management.html", 
+                color: "var(--orange)"  // 構造・管理 (New!)
+            }
         ];
 
         // ---------------------------------------------------------
-        // 2. ENGINE LAYER: インターフェース生成エンジン
-        //    (データを読み込み、HTMLを動的に構築する機能)
+        // 2. ENGINE LAYER: インターフェース生成
         // ---------------------------------------------------------
         document.addEventListener('DOMContentLoaded', () => {
             const rootElement = document.getElementById('quiz-list-root');
 
             QUIZ_APPS.forEach(app => {
-                // <li>要素の作成
                 const li = document.createElement('li');
+                
+                // リンク要素を作成
+                const link = document.createElement('a');
+                link.href = app.url;
+                
+                // カラーバー作成
+                const colorBar = document.createElement('div');
+                colorBar.className = 'color-bar';
+                // 初期状態は薄い色(--base2)だが、マウスオーバー時に固有色にするための仕掛け
+                // ここではシンプルに常に固有色を表示するか、あるいはCSSで制御するか。
+                // 前回のデザインを踏襲し、常時色を表示しつつ、ホバーで強調されるスタイルにします。
+                colorBar.style.backgroundColor = app.color; 
 
-                // リンク構造の構築
-                li.innerHTML = `
-                    <a href="${app.url}">
-                        <div class="color-bar" style="background-color: ${app.color}"></div>
-                        ${app.title}
-                        <span class="arrow">→</span>
-                    </a>
-                `;
+                // テキストノード
+                const textNode = document.createTextNode(app.title);
 
-                // DOMへの配置（レンダリング）
+                // 矢印
+                const arrowSpan = document.createElement('span');
+                arrowSpan.className = 'arrow';
+                arrowSpan.textContent = '→';
+
+                // 組み立て
+                link.appendChild(colorBar);
+                link.appendChild(textNode);
+                link.appendChild(arrowSpan);
+                li.appendChild(link);
+
+                // レンダリング
                 rootElement.appendChild(li);
             });
         });
