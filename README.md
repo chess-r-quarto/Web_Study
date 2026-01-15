@@ -1,7 +1,41 @@
-Web Study PortalA minimalist gateway for accessing specialized study modules.Designed with the Solarized Light color palette, prioritizing clarity and focus.ModulesThe portal aggregates the following learning applications:Data Science Quiz (DS_Quiz.html)Focus: Analytical concepts and theory.Accent: MagentaR Programming Quiz (R_Quiz.html)Focus: Syntax, libraries, and implementation.Accent: BlueData Management (Data_Management.html)Focus: Data structuring and management principles.Accent: OrangeFOMC Master (FOMC_Master/)Focus: Economic vocabulary and financial literacy.Accent: GreenStructureCurrent file organization:.
-├── index.html            # Entry point (Portal)
-├── DS_Quiz.html          # Data Science module
-├── R_Quiz.html           # R Programming module
-├── Data_Management.html  # Data Management module
-└── FOMC_Master/          # FOMC application directory
-Design PhilosophySimplicity: No distractions. Content is king.Solarized Light: Low contrast color scheme for eye comfort during long study sessions.Tactile Interaction: Hover effects designed to provide distinct feedback, inspired by high-quality mechanical inputs.UsageSimply open index.html in any modern web browser. No build process required.
+Web Study Portal
+
+A minimalist portal for accessing various study modules, designed with Solarized Light aesthetics.
+
+This structure prioritizes typography, whitespace, and functionality, adhering to Bauhaus principles.
+
+Module Index
+
+Data & Analysis
+
+Data Science Quiz: DS_Quiz.html
+
+R Programming Quiz: R_Quiz.html
+
+Data Management: Data_Management.html
+
+Finance & Economics
+
+FOMC Master: FOMC_Master.html
+
+FP1 Portfolio Strategy: FP1_Portfolio.html
+
+FP1 Pension System: FP1_Pension.html
+
+FP1 Financial Assets: FP1_FAR.html
+
+Taxation
+
+Corporate Tax Master: Corporate_tax_master.html
+
+Long-term Tax Sim: Long_term_sell_buy_tax.html
+
+Design System
+
+Palette: Solarized Light
+
+Typography: Noto Sans JP / System Fonts
+
+Philosophy: Form follows function. No unnecessary decoration.
+
+Last Updated: 2026-01-15
