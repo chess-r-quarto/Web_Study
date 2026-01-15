@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP1級 年金算定・繰下げ月数内訳シート</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        @media print {
+            body { background: white; color: black; }
+            .no-print { display: none !important; }
+            .printable-page { width: 100%; margin: 0; padding: 5mm; border: none; }
+            section { page-break-inside: avoid; }
+            @page { size: A4 portrait; margin: 10mm; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-4 px-4 font-sans">
+
+    <div class="max-w-4xl mx-auto printable-page bg-white shadow-xl rounded-xl p-8 border">
+        <div class="flex justify-between items-center border-b-2 border-blue-900 pb-2 mb-6">
+            <div>
+                <h1 class="text-xl font-bold text-blue-900">老齢年金 受給額算定プロセス</h1>
+                <p class="text-[10px] text-gray-500">基礎・厚生・経過的加算・繰下げ月数内訳</p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-blue-900 text-white px-6 py-2 rounded font-bold shadow-md hover:bg-blue-800 transition">
+                A4縦 PDF出力
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 no-print mb-8">
+            <div class="p-4 bg-slate-50 rounded border border-slate-200 space-y-3 text-xs">
+                <h3 class="font-bold text-blue-800 border-l-4 border-blue-800 pl-2">1. 属性・期間設定</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <label>本人生年月日 <input type="date" id="birthDate" value="1961-11-15" class="w-full p-1 border rounded"></label>
+                    <label>年金請求月 <input type="month" id="claimMonth" value="2028-12" class="w-full p-1 border rounded font-bold bg-yellow-50"></label>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <label>基礎年金月数 <input type="number" id="mNational" value="480" class="w-full p-1 border rounded"></label>
+                    <label>厚生年金月数 <input type="number" id="mKosei" value="480" class="w-full p-1 border rounded"></label>
+                    <label>20歳前/60歳後 <input type="number" id="mExtra" value="12" class="w-full p-1 border rounded"></label>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 rounded border border-slate-200 space-y-3 text-xs">
+                <h3 class="font-bold text-blue-800 border-l-4 border-blue-800 pl-2">2. 金額基礎データ</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <label>平均標準報酬額(円) <input type="number" id="avgSalary" value="450000" class="w-full p-1 border rounded"></label>
+                    <label>基礎年金満額(R5) <input type="number" id="fullBasic" value="795000" class="w-full p-1 border rounded"></label>
+                </div>
+                <div class="flex items-center gap-4 pt-2">
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="radio" name="calcType" value="down" checked onchange="update()"> 繰下げ (0.7%)
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="radio" name="calcType" value="up" onchange="update()"> 繰上げ (0.4%)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <section>
+                <h2 class="text-sm font-bold bg-blue-900 text-white px-3 py-1 mb-3">1. 待機期間の算定内訳</h2>
+                <div id="monthTrace" class="pl-4 text-[11px] leading-relaxed font-mono space-y-1 bg-gray-50 p-4 border-l-4 border-gray-300"></div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-bold bg-blue-900 text-white px-3 py-1 mb-3">2. 各年金の基本額算定 (65歳時価額)</h2>
+                <div id="pensionBase" class="pl-4 text-[11px] space-y-2"></div>
+            </section>
+
+            <section class="border-2 border-blue-900 p-6 rounded-lg text-center relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-blue-900 text-white text-[10px] px-4 py-1 font-bold">FINAL ANSWER</div>
+                <p class="text-xs font-bold text-gray-600 mb-2 uppercase">繰延調整後：総受給待機額（年額）</p>
+                <p class="text-4xl font-black text-blue-900" id="finalTotal">-- 円</p>
+                <p id="rateDetail" class="text-xs mt-2 font-bold text-red-600"></p>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        function update() {
+            // Inputs
+            const birthDate = new Date(document.getElementById('birthDate').value);
+            const claimMonthInput = document.getElementById('claimMonth').value;
+            const mNational = parseInt(document.getElementById('mNational').value) || 0;
+            const mKosei = parseInt(document.getElementById('mKosei').value) || 0;
+            const mExtra = parseInt(document.getElementById('mExtra').value) || 0;
+            const avgSalary = parseInt(document.getElementById('avgSalary').value) || 0;
+            const fullBasic = parseInt(document.getElementById('fullBasic').value) || 0;
+            const calcType = document.querySelector('input[name="calcType"]:checked').value;
+
+            // 1. 月数計算 (65歳到達月の翌月 ～ 請求月の前月)
+            const reach65Date = new Date(birthDate);
+            reach65Date.setFullYear(reach65Date.getFullYear() + 65);
+            reach65Date.setDate(reach65Date.getDate() - 1); // 誕生日前日
+            
+            const startMonth = new Date(reach65Date.getFullYear(), reach65Date.getMonth() + 1, 1);
+            const endMonth = new Date(claimMonthInput + "-01");
+
+            let totalMonths = (endMonth.getFullYear() - startMonth.getFullYear()) * 12 + (endMonth.getMonth() - startMonth.getMonth());
+            if (totalMonths < 0) totalMonths = 0;
+
+            // 内訳テキスト生成
+            let traceHTML = `<p>・65歳到達月：${reach65Date.getFullYear()}年${reach65Date.getMonth()+1}月 (到達日:${reach65Date.toLocaleDateString()})</p>`;
+            traceHTML += `<p>・待機開始月：${startMonth.getFullYear()}年${startMonth.getMonth()+1}月</p>`;
+            traceHTML += `<p>・請求月(直前月までカウント)：${endMonth.getFullYear()}年${endMonth.getMonth()+1}月</p><div class='mt-2 border-t pt-2'>`;
+            
+            let tempStart = new Date(startMonth);
+            let remain = totalMonths;
+            while (remain >= 12) {
+                let yS = tempStart.getFullYear(); let mS = tempStart.getMonth() + 1;
+                tempStart.setMonth(tempStart.getMonth() + 12);
+                let tempEnd = new Date(tempStart); tempEnd.setMonth(tempEnd.getMonth() - 1);
+                traceHTML += `<p>12ヶ月： ${yS}年${mS}月 ～ ${tempEnd.getFullYear()}年${tempEnd.getMonth()+1}月</p>`;
+                remain -= 12;
+            }
+            if (remain > 0) {
+                let yS = tempStart.getFullYear(); let mS = tempStart.getMonth() + 1;
+                tempStart.setMonth(tempStart.getMonth() + remain - 1);
+                traceHTML += `<p>${String(remain).padStart(2,' ')}ヶ月： ${yS}年${mS}月 ～ ${tempStart.getFullYear()}年${tempStart.getMonth()+1}月</p>`;
+            }
+            traceHTML += `</div><p class='font-bold mt-2 text-sm'>計 ${totalMonths} ヶ月</p>`;
+            document.getElementById('monthTrace').innerHTML = traceHTML;
+
+            // 2. 基本額計算
+            const basic = Math.floor(fullBasic * (Math.min(mNational, 480) / 480));
+            const kosei = Math.floor(avgSalary * 0.005481 * mKosei);
+            const unitKeika = 1657; // R5定額単価
+            const mKeikaSub = Math.min(mKosei - mExtra, 480);
+            const keika = Math.floor((unitKeika * Math.min(mKosei, 480)) - (fullBasic * (mKeikaSub / 480)));
+            const baseSum = basic + kosei + Math.max(0, keika);
+
+            document.getElementById('pensionBase').innerHTML = `
+                <p>・老齢基礎年金： $${fullBasic.toLocaleString()} \times \frac{${mNational}}{480} = ${basic.toLocaleString()}円$</p>
+                <p>・老齢厚生年金： $${avgSalary.toLocaleString()} \times 0.005481 \times ${mKosei} = ${kosei.toLocaleString()}円$</p>
+                <p>・経過的加算額： $(${unitKeika} \times ${Math.min(mKosei, 480)}) - (${fullBasic} \times \frac{${mKeikaSub}}{480}) = ${Math.max(0, keika).toLocaleString()}円$</p>
+                <p class="text-blue-800 font-bold mt-2">65歳時合計： ${baseSum.toLocaleString()}円</p>
+            `;
+
+            // 3. 調整率と最終額
+            let adjRate = (calcType === 'down') ? (totalMonths * 0.007) : (totalMonths * -0.004);
+            const final = Math.floor(baseSum * (1 + adjRate));
+            
+            document.getElementById('finalTotal').innerText = final.toLocaleString() + " 円";
+            document.getElementById('rateDetail').innerText = `${calcType==='down'?'増額':'減額'}率： ${(adjRate*100).toFixed(1)}% (${totalMonths}ヶ月分)`;
+
+            if (window.MathJax && window.MathJax.typesetPromise) window.MathJax.typesetPromise();
+        }
+
+        ['birthDate', 'claimMonth', 'mNational', 'mKosei', 'mExtra', 'avgSalary', 'fullBasic'].forEach(id => {
+            document.getElementById(id).addEventListener('input', update);
+        });
+        window.onload = update;
+    </script>
+</body>
+</html>
