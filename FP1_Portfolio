@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポートフォリオ計算機</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen py-8 px-4">
+
+    <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">2資産ポートフォリオ計算機</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="p-4 bg-blue-50 rounded-lg">
+                <h2 class="font-semibold text-blue-800 mb-3">資産 A</h2>
+                <div class="space-y-3">
+                    <label class="block text-sm">期待リターン (%)
+                        <input type="number" id="r1" value="5" class="w-full mt-1 p-2 border rounded">
+                    </label>
+                    <label class="block text-sm">標準偏差 (%)
+                        <input type="number" id="s1" value="10" class="w-full mt-1 p-2 border rounded">
+                    </label>
+                    <label class="block text-sm">投資比率 (%)
+                        <input type="number" id="w1" value="50" class="w-full mt-1 p-2 border rounded">
+                    </label>
+                </div>
+            </div>
+
+            <div class="p-4 bg-green-50 rounded-lg">
+                <h2 class="font-semibold text-green-800 mb-3">資産 B</h2>
+                <div class="space-y-3">
+                    <label class="block text-sm">期待リターン (%)
+                        <input type="number" id="r2" value="8" class="w-full mt-1 p-2 border rounded">
+                    </label>
+                    <label class="block text-sm">標準偏差 (%)
+                        <input type="number" id="s2" value="20" class="w-full mt-1 p-2 border rounded">
+                    </label>
+                    <label class="block text-sm">投資比率 (%)
+                        <input type="number" id="w2" value="50" class="w-full mt-1 p-2 border rounded">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-8 p-4 bg-gray-100 rounded-lg">
+            <label class="block text-sm font-semibold mb-2">相関係数 ($\rho$) : <span id="rhoValue">0.20</span></label>
+            <input type="range" id="rho" min="-1" max="1" step="0.01" value="0.2" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer">
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>-1.0 (逆相関)</span>
+                <span>0 (無相関)</span>
+                <span>1.0 (正相関)</span>
+            </div>
+        </div>
+
+        <div id="resultArea" class="hidden border-t pt-6">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="text-center p-3 bg-indigo-600 text-white rounded-lg">
+                    <p class="text-xs opacity-80">ポートフォリオ期待リターン</p>
+                    <p class="text-2xl font-bold" id="resReturn">--</p>
+                </div>
+                <div class="text-center p-3 bg-indigo-800 text-white rounded-lg">
+                    <p class="text-xs opacity-80">ポートフォリオ標準偏差</p>
+                    <p class="text-2xl font-bold" id="resStd">--</p>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-2 italic">Calculation Steps</h3>
+                <div id="calculationSteps"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ポートフォリオ計算エンジン (TypeScriptロジックをJSに変換)
+         */
+        class PortfolioEngine {
+            static calculate(r1, s1, w1, r2, s2, w2, rho) {
+                const W1 = w1 / 100;
+                const W2 = w2 / 100;
+
+                const portReturn = (W1 * r1) + (W2 * r2);
+
+                const term1 = Math.pow(W1, 2) * Math.pow(s1, 2);
+                const term2 = Math.pow(W2, 2) * Math.pow(s2, 2);
+                const term3 = 2 * W1 * W2 * s1 * s2 * rho;
+                const variance = term1 + term2 + term3;
+                const portStd = Math.sqrt(variance);
+
+                const steps = `
+                    <div class="space-y-4 text-sm text-gray-700">
+                        <section>
+                            <p class="font-bold">1. 期待リターンの計算:</p>
+                            <p class="pl-4">E[R_p] = (${W1.toFixed(2)} × ${r1}%) + (${W2.toFixed(2)} × ${r2}%) = <b class="text-indigo-600">${portReturn.toFixed(2)}%</b></p>
+                        </section>
+                        
+                        <section>
+                            <p class="font-bold">2. 分散 ($\sigma_p^2$) の計算:</p>
+                            <p class="pl-4 italic text-xs text-gray-500 mb-1">公式: $w_1^2 \sigma_1^2 + w_2^2 \sigma_2^2 + 2w_1 w_2 \sigma_1 \sigma_2 \rho$</p>
+                            <ul class="list-disc ml-9 space-y-1">
+                                <li>資産A寄与: ${W1.toFixed(2)}^2 × ${s1}^2 = ${term1.toFixed(4)}</li>
+                                <li>資産B寄与: ${W2.toFixed(2)}^2 × ${s2} ^2 = ${term2.toFixed(4)}</li>
+                                <li>共分散項: 2 × ${W1.toFixed(2)} × ${W2.toFixed(2)} × ${s1} × ${s2} × ${rho} = ${term3.toFixed(4)}</li>
+                            </ul>
+                            <p class="pl-4 mt-1 font-semibold">合計分散: ${variance.toFixed(4)}</p>
+                        </section>
+
+                        <section>
+                            <p class="font-bold">3. 標準偏差 ($\sigma_p$) の算出:</p>
+                            <p class="pl-4">$\sqrt{ ${variance.toFixed(4)} }$ = <b class="text-blue-600 text-lg">${portStd.toFixed(2)}%</b></p>
+                        </section>
+                    </div>
+                `;
+
+                return {
+                    expectedReturn: portReturn,
+                    standardDeviation: portStd,
+                    calculationSteps: steps
+                };
+            }
+        }
+
+        // --- UI Logic ---
+        const inputs = ['r1', 's1', 'w1', 'r2', 's2', 'w2', 'rho'];
+        
+        function update() {
+            const values = {};
+            inputs.forEach(id => {
+                values[id] = parseFloat(document.getElementById(id).value) || 0;
+            });
+
+            // 相関係数のラベル更新
+            document.getElementById('rhoValue').innerText = values.rho.toFixed(2);
+
+            // 計算実行
+            const result = PortfolioEngine.calculate(
+                values.r1, values.s1, values.w1,
+                values.r2, values.s2, values.w2,
+                values.rho
+            );
+
+            // 表示の更新
+            document.getElementById('resultArea').classList.remove('hidden');
+            document.getElementById('resReturn').innerText = result.expectedReturn.toFixed(2) + '%';
+            document.getElementById('resStd').innerText = result.standardDeviation.toFixed(2) + '%';
+            
+            const stepsContainer = document.getElementById('calculationSteps');
+            stepsContainer.innerHTML = result.calculationSteps;
+
+            // MathJaxの再レンダリング（動的に追加された数式用）
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        // 全ての入力イベントにリスナーを設定
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', update);
+        });
+
+        // 初回実行
+        window.onload = update;
+    </script>
+</body>
+</html>
