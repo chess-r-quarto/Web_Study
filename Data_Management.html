@@ -2,103 +2,426 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>データマネジメントリテラシー診断</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management Literacy Training</title>
     <style>
         /* ==========================================
-           1. UI部分: スタイル定義
+           1. macOS風 UIスタイル定義
            ========================================== */
-        :root { --primary: #0052cc; --bg: #f4f7f9; --text: #333; --success: #27ae60; --error: #e74c3c; }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg); display: flex; justify-content: center; padding: 40px 20px; margin: 0; color: var(--text); }
-        #app { background: white; max-width: 650px; width: 100%; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative; }
+        :root {
+            --system-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --window-bg: #ffffff;
+            --title-bar-bg: #f1f1f1;
+            --title-bar-border: #dcdcdc;
+            --primary: #007aff; /* macOS Blue */
+            --primary-hover: #0062cc;
+            --text-main: #222;
+            --text-sub: #666;
+            --success: #34c759;
+            --error: #ff3b30;
+            --btn-bg: #ffffff;
+            --btn-border: #d1d1d1;
+            --btn-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: var(--system-font);
+            background: url('https://images.unsplash.com/photo-1621360841013-c768371e93cf?q=80&w=2560&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-main);
+            backdrop-filter: blur(10px); /* 背景のぼかし */
+        }
+
+        /* ウィンドウ本体 */
+        #window-frame {
+            background: var(--window-bg);
+            width: 100%;
+            max-width: 700px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: popIn 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* タイトルバー */
+        .title-bar {
+            height: 38px;
+            background: linear-gradient(to bottom, #f6f6f6, #e8e8e8);
+            border-bottom: 1px solid #c8c8c8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            user-select: none;
+            -webkit-app-region: drag; /* Electron等でのドラッグ対応 */
+        }
+
+        .title-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            letter-spacing: 0.5px;
+        }
+
+        /* 信号機ボタン (Traffic Lights) */
+        .traffic-lights {
+            position: absolute;
+            left: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .traffic-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 0.5px solid rgba(0,0,0,0.1);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: rgba(0,0,0,0.6);
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .traffic-btn:hover::after {
+            content: attr(data-icon);
+            opacity: 1;
+        }
         
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-        .header h2 { margin: 10px 0; font-size: 1.5rem; color: var(--primary); }
+        .traffic-btn::after {
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .btn-close { background-color: #ff5f56; border-color: #e0443e; }
+        .btn-close:active { background-color: #bf4942; }
+
+        .btn-minimize { background-color: #ffbd2e; border-color: #dea123; }
+        .btn-minimize:active { background-color: #bf8e22; }
+
+        .btn-zoom { background-color: #27c93f; border-color: #1aab29; }
+        .btn-zoom:active { background-color: #1d9730; }
+
+
+        /* コンテンツエリア */
+        #app-content {
+            padding: 30px 40px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-content {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .header-content h2 {
+            margin: 5px 0;
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #333;
+        }
+        .header-content small {
+            color: #888;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
 
         /* 設定エリア */
-        .settings { background: #f0f4f8; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem; }
-        .settings label { font-weight: bold; margin-right: 10px; }
+        .settings {
+            background: #f5f5f7;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e5e5e5;
+        }
+        .settings select {
+            margin-left: 10px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #d1d1d1;
+            background: #fff;
+            font-family: inherit;
+        }
 
-        /* ジャンル選択画面 */
-        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
-        .category-btn { background: #fff; border: 2px solid #e0e0e0; padding: 12px 15px; border-radius: 10px; cursor: pointer; font-size: 1rem; transition: 0.2s; text-align: left; display: flex; justify-content: space-between; align-items: center; }
-        .category-btn:hover { border-color: var(--primary); background: #f0f7ff; color: var(--primary); }
+        /* ジャンル選択リスト */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .category-btn {
+            background: var(--btn-bg);
+            border: 1px solid var(--btn-border);
+            box-shadow: var(--btn-shadow);
+            padding: 14px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text-main);
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            font-family: var(--system-font);
+        }
+        .category-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+        }
+        .category-btn span:last-child {
+            opacity: 0.5;
+        }
+        .category-btn:hover span:last-child {
+            opacity: 1;
+        }
 
         /* クイズ画面 */
-        .q-meta { color: var(--primary); font-weight: bold; margin-bottom: 10px; display: block; font-size: 0.85rem; }
-        .q-text { font-size: 1.15rem; margin-bottom: 25px; line-height: 1.6; font-weight: 600; min-height: 80px; }
-        .btn-container { display: grid; grid-template-columns: 1fr; gap: 12px; }
-        .opt-btn { padding: 16px; font-size: 1rem; cursor: pointer; border: 2px solid #eee; border-radius: 10px; background: #fff; transition: 0.2s; text-align: left; }
-        .opt-btn:hover:not(:disabled) { background: #f0f7ff; border-color: var(--primary); }
-        .opt-btn:disabled { cursor: default; }
+        .q-meta {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: block;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .q-text {
+            font-size: 1.25rem;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            font-weight: 600;
+            color: #333;
+            min-height: 60px;
+        }
+        
+        .btn-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .opt-btn {
+            padding: 18px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: 1px solid #dcdcdc;
+            border-radius: 10px;
+            background: #fff;
+            color: #333;
+            text-align: left;
+            transition: all 0.15s ease-out;
+            font-family: var(--system-font);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            line-height: 1.4;
+        }
+        .opt-btn:hover:not(:disabled) {
+            background: #f0f8ff;
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+        .opt-btn:active:not(:disabled) {
+            transform: translateY(0);
+            background: #e6f0fa;
+        }
+        .opt-btn:disabled {
+            opacity: 0.7;
+            cursor: default;
+        }
 
-        /* アクションエリア */
-        #action-area { margin-top: 20px; min-height: 100px; text-align: center; }
-        #feedback { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+        /* フィードバック＆アクション */
+        #action-area {
+            margin-top: 30px;
+            min-height: 80px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #feedback {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            height: 30px; /* 固定高さでレイアウトシフト防止 */
+        }
         .correct { color: var(--success); }
         .wrong { color: var(--error); }
-        .next-btn { background: var(--primary); color: white; border: none; padding: 12px 40px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold; animation: fadeIn 0.3s; }
-        .next-btn:hover { opacity: 0.9; }
 
-        /* 共通ナビ */
-        .nav-footer { margin-top: 20px; display: flex; justify-content: center; }
-        .back-btn { background: none; border: none; color: #888; text-decoration: underline; cursor: pointer; font-size: 0.85rem; }
+        /* macOS風プライマリボタン */
+        .next-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            font-family: var(--system-font);
+        }
+        .next-btn:hover {
+            background: var(--primary-hover);
+        }
+        .next-btn:active {
+            transform: scale(0.98);
+        }
 
-        .hidden { display: none; }
-        .stats { margin-top: 20px; font-size: 0.8rem; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* フッター */
+        .nav-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: var(--system-font);
+            transition: color 0.2s;
+        }
+        .back-btn:hover {
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .stats {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #aaa;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <div class="header">
-        <small>Data Management Literacy Training</small>
-        <h2 id="app-title">リテラシー診断</h2>
+<div id="window-frame">
+    <!-- macOS風タイトルバー -->
+    <div class="title-bar">
+        <div class="traffic-lights">
+            <!-- 赤: アプリ終了（リセット） -->
+            <div class="traffic-btn btn-close" data-icon="✕" onclick="appControl.quit()"></div>
+            <!-- 黄: フルスクリーン解除 -->
+            <div class="traffic-btn btn-minimize" data-icon="−" onclick="appControl.minimize()"></div>
+            <!-- 緑: フルスクリーン -->
+            <div class="traffic-btn btn-zoom" data-icon="＋" onclick="appControl.zoom()"></div>
+        </div>
+        <div class="title-text">リテラシー診断</div>
     </div>
 
-    <div id="view-menu">
-        <div class="settings">
-            <label>次への自動遷移時間：</label>
-            <select id="select-interval">
-                <option value="1000">1秒 (スピーディ)</option>
-                <option value="3000" selected>3秒 (標準)</option>
-                <option value="5000">5秒 (じっくり)</option>
-            </select>
-        </div>
-        <p>ジャンルを選択して開始：</p>
-        <div id="category-list" class="menu-grid"></div>
-    </div>
-
-    <div id="view-quiz" class="hidden">
-        <span class="q-meta" id="q-number"></span>
-        <div class="q-text" id="q-content"></div>
-        <div class="btn-container">
-            <button class="opt-btn" id="opt0" onclick="engine.checkAnswer(0)"></button>
-            <button class="opt-btn" id="opt1" onclick="engine.checkAnswer(1)"></button>
-        </div>
-        
-        <div id="action-area">
-            <div id="feedback"></div>
-            <button id="manual-next" class="next-btn hidden" onclick="engine.nextQuestion()">次へ進む ≫</button>
+    <!-- アプリケーションコンテンツ -->
+    <div id="app-content">
+        <div class="header-content">
+            <small>Data Management Literacy Training</small>
+            <h2 id="app-title">リテラシー診断</h2>
         </div>
 
-        <div class="stats">
-            正解数: <span id="q-score">0</span> / <span id="q-total">0</span>
+        <div id="view-menu">
+            <div class="settings">
+                <label>自動遷移時間:</label>
+                <select id="select-interval">
+                    <option value="1000">1秒 (高速)</option>
+                    <option value="3000" selected>3秒 (標準)</option>
+                    <option value="5000">5秒 (ゆっくり)</option>
+                </select>
+            </div>
+            <p style="text-align:center; color:#666; margin-bottom:15px;">ジャンルを選択して開始</p>
+            <div id="category-list" class="menu-grid"></div>
         </div>
-        <div class="nav-footer">
-            <button class="back-btn" onclick="engine.showMenu()">← 中断して戻る</button>
-        </div>
-    </div>
 
-    <div id="view-result" class="hidden" style="text-align: center;">
-        <h3>診断終了</h3>
-        <div style="font-size: 3rem; font-weight: bold; color: var(--primary); margin: 20px 0;" id="result-score"></div>
-        <p id="result-text"></p>
-        <button class="next-btn" style="width: 100%;" onclick="engine.showMenu()">トップに戻る</button>
+        <div id="view-quiz" class="hidden">
+            <span class="q-meta" id="q-number"></span>
+            <div class="q-text" id="q-content"></div>
+            <div class="btn-container">
+                <button class="opt-btn" id="opt0" onclick="engine.checkAnswer(0)"></button>
+                <button class="opt-btn" id="opt1" onclick="engine.checkAnswer(1)"></button>
+            </div>
+            
+            <div id="action-area">
+                <div id="feedback"></div>
+                <button id="manual-next" class="next-btn hidden" onclick="engine.nextQuestion()">次へ進む</button>
+            </div>
+
+            <div class="stats">
+                Score: <span id="q-score">0</span> / <span id="q-total">0</span>
+            </div>
+            <div class="nav-footer">
+                <button class="back-btn" onclick="engine.showMenu()">メニューに戻る</button>
+            </div>
+        </div>
+
+        <div id="view-result" class="hidden" style="text-align: center; flex-grow: 1; display:flex; flex-direction:column; justify-content:center;">
+            <h3 style="color:#666;">診断終了</h3>
+            <div style="font-size: 4rem; font-weight: 200; color: var(--primary); margin: 20px 0;" id="result-score"></div>
+            <p id="result-text" style="font-size: 1.1rem; color: #444; margin-bottom: 40px;"></p>
+            <button class="next-btn" style="width: 100%; max-width: 300px; margin: 0 auto;" onclick="engine.showMenu()">トップに戻る</button>
+        </div>
     </div>
 </div>
 
 <script>
+/**
+ * ==========================================
+ * 0. macOS風ウィンドウコントロール
+ * ==========================================
+ */
+const appControl = {
+    // 赤ボタン: アプリ終了（リセット）
+    quit() {
+        if(confirm('診断を終了してトップ画面に戻りますか？')) {
+            location.reload();
+        }
+    },
+    // 黄ボタン: フルスクリーン解除
+    minimize() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.log(err));
+        }
+    },
+    // 緑ボタン: フルスクリーン
+    zoom() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => console.log(err));
+        }
+    }
+};
+
 /**
  * ==========================================
  * 2. エンジン部分: 処理ロジック
@@ -118,17 +441,19 @@ const engine = {
     showMenu() {
         this.clearTimer();
         this.toggleView('view-menu');
+        document.querySelector('.header-content').style.display = 'block';
         const list = document.getElementById('category-list');
         list.innerHTML = '';
         const categories = [...new Set(questionDatabase.map(q => q.category))];
-        this.createCategoryBtn(list, "全ジャンルから出題", null);
+        this.createCategoryBtn(list, "全ジャンルから出題 (ランダム)", null);
         categories.forEach(cat => this.createCategoryBtn(list, cat, cat));
     },
 
     createCategoryBtn(parent, label, filter) {
         const btn = document.createElement('button');
         btn.className = 'category-btn';
-        btn.innerHTML = `<span>${label}</span><span>→</span>`;
+        btn.innerHTML = `<span>${label}</span><span>Of course</span>`; // macOSっぽい文言へ変更（実際は矢印でも可）
+        btn.innerHTML = `<span>${label}</span><span style="font-size:1.2em">›</span>`;
         btn.onclick = () => this.startQuiz(filter);
         parent.appendChild(btn);
     },
@@ -140,6 +465,7 @@ const engine = {
 
         this.currentIndex = 0;
         this.score = 0;
+        document.querySelector('.header-content').style.display = 'none'; // クイズ中はヘッダーを隠して集中
         this.toggleView('view-quiz');
         this.renderQuestion();
     },
@@ -156,10 +482,12 @@ const engine = {
         btns.forEach((btn, i) => {
             btn.innerText = q.options[i];
             btn.disabled = false;
-            btn.style.borderColor = "#eee";
+            btn.style.borderColor = "#dcdcdc";
+            btn.style.color = "#333";
+            btn.style.backgroundColor = "#fff";
         });
         
-        document.getElementById('q-number').innerText = `${q.category} (Q${this.currentIndex + 1}/${this.currentQuestions.length})`;
+        document.getElementById('q-number').innerText = `${q.category} — Question ${this.currentIndex + 1} / ${this.currentQuestions.length}`;
         document.getElementById('q-content').innerText = q.question;
         document.getElementById('q-score').innerText = this.score;
         document.getElementById('q-total').innerText = this.currentIndex;
@@ -179,16 +507,23 @@ const engine = {
         [0, 1].forEach(i => {
             const btn = document.getElementById(`opt${i}`);
             btn.disabled = true;
-            if (i === q.answer) btn.style.borderColor = "var(--success)";
+            if (i === q.answer) {
+                btn.style.borderColor = "var(--success)";
+                btn.style.backgroundColor = "#e8f5e9";
+                btn.style.color = "var(--success)";
+                btn.style.fontWeight = "bold";
+            } else if (i === choice && i !== q.answer) {
+                btn.style.borderColor = "var(--error)";
+                btn.style.backgroundColor = "#ffebee";
+            }
         });
 
         if (choice === q.answer) {
             this.score++;
-            feedback.innerText = "● 正解！";
+            feedback.innerText = "Correct";
             feedback.className = "correct";
         } else {
-            document.getElementById(`opt${choice}`).style.borderColor = "var(--error)";
-            feedback.innerText = "× 不正解";
+            feedback.innerText = "Incorrect";
             feedback.className = "wrong";
         }
 
@@ -216,9 +551,10 @@ const engine = {
 
     showResult() {
         this.toggleView('view-result');
+        document.querySelector('.header-content').style.display = 'block';
         document.getElementById('result-score').innerText = `${this.score} / ${this.currentQuestions.length}`;
         const rate = (this.score / this.currentQuestions.length) * 100;
-        document.getElementById('result-text').innerText = rate === 100 ? "完璧です！エキスパート級のリテラシーです。" : "お疲れ様でした！";
+        document.getElementById('result-text').innerText = rate === 100 ? "Excellent! 完全制覇です。" : "Good job! お疲れ様でした。";
     },
 
     toggleView(viewId) {
@@ -226,6 +562,8 @@ const engine = {
             document.getElementById(id).classList.add('hidden');
         });
         document.getElementById(viewId).classList.remove('hidden');
+        
+        // ビュー切り替え時にウィンドウサイズに応じたアニメーションリセット等はCSSで処理
     }
 };
 
