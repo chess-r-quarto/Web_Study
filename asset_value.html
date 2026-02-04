@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>純資産価額方式シミュレーター (FP1級 設例再現版)</title>
+    
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <style>
+        :root {
+            /* Colors - Shared */
+            --bs-blue: #007AFF;
+            --bs-green: #34C759;
+            --bs-red: #FF3B30;
+            --bs-gray: #8E8E93;
+            
+            /* Light Theme */
+            --bg-base: #E0E5EC;
+            --window-bg: rgba(255, 255, 255, 0.92);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --title-bar-bg: rgba(255,255,255,0.4);
+            
+            --input-bg: #ffffff;
+            --input-border: #d1d1d6;
+            --input-focus: #007AFF;
+            
+            --table-header-bg: #f5f5f7;
+            --table-border: #d1d1d6;
+            --total-row-bg: #fafafa;
+            
+            --block-text: rgba(255,255,255,0.95);
+        }
+
+        /* Dark Theme */
+        body.dark-mode {
+            --bg-base: #1c1c1e;
+            --window-bg: rgba(40, 40, 40, 0.92);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --text-primary: #f5f5f7;
+            --text-secondary: #98989d;
+            --title-bar-bg: rgba(60,60,60,0.4);
+            
+            --input-bg: #2c2c2e;
+            --input-border: #48484a;
+            --input-focus: #0A84FF;
+            
+            --table-header-bg: #3a3a3c;
+            --table-border: #555;
+            --total-row-bg: #323234;
+            
+            --block-text: rgba(255,255,255,0.9);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-base);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-primary);
+            transition: background 0.3s;
+        }
+
+        /* Window Frame */
+        .window {
+            width: 1200px; /* Expanded for the side-by-side table */
+            height: 750px;
+            background: var(--window-bg);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 12px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            border: var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: fadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Title Bar */
+        .title-bar {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid rgba(128,128,128,0.15);
+            background: var(--title-bar-bg);
+            flex-shrink: 0;
+        }
+
+        .traffic-lights { display: flex; gap: 8px; margin-right: 20px;}
+        .light { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; }
+        .close { background: #FF5F57; border: 1px solid #E0443E; }
+        .minimize { background: #FFBD2E; border: 1px solid #DEA123; }
+        .maximize { background: #28C93F; border: 1px solid #1AAB29; }
+        .window-title { flex: 1; text-align: center; font-size: 13px; font-weight: 500; color: var(--text-primary); pointer-events: none; }
+        .toggle-switch { transform: scale(0.8); cursor: pointer; }
+
+        /* Content Layout */
+        .content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Left Panel: Inputs */
+        .controls {
+            width: 620px; /* Wide enough for the table */
+            border-right: 1px solid rgba(128,128,128,0.15);
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            overflow-y: auto;
+            background: rgba(128,128,128,0.02);
+        }
+
+        /* Shares Input Area */
+        .shares-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: var(--input-bg);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--table-border);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .shares-label { font-size: 13px; font-weight: 600; }
+        .shares-input { width: 120px; text-align: right; }
+
+        /* The Exam Table Layout */
+        .exam-table-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Assets | Liabilities */
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .exam-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--table-border);
+            border-radius: 4px; /* Slight radius on corners if possible, but collapse limits it */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            overflow: hidden;
+        }
+
+        .exam-table th, .exam-table td {
+            border: 1px solid var(--table-border);
+            padding: 8px 6px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .exam-table th {
+            background: var(--table-header-bg);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .col-subject { width: 60px; }
+        .col-value { width: 90px; }
+
+        .row-total {
+            background-color: var(--total-row-bg);
+            font-weight: 700;
+        }
+
+        /* Input Styles inside Table */
+        .table-input {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid transparent; /* Hide border until focus/hover */
+            background: transparent;
+            text-align: right;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+            padding: 4px;
+            border-radius: 4px;
+            font-variant-numeric: tabular-nums;
+            transition: all 0.2s;
+        }
+
+        .table-input:hover {
+            background: rgba(128,128,128,0.05);
+        }
+
+        .table-input:focus {
+            background: var(--input-bg);
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+        }
+
+        .total-display {
+            display: block;
+            text-align: right;
+            padding: 4px;
+            color: var(--text-primary);
+        }
+
+        /* Result & Math Area */
+        .result-section {
+            margin-top: auto;
+            background: linear-gradient(135deg, #007AFF 0%, #00C6FB 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3);
+            text-align: center;
+        }
+        
+        .math-wrapper {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            overflow-x: auto;
+            text-align: left;
+        }
+
+        /* Right Panel: Visualization */
+        .visualization {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.02));
+        }
+
+        .bar-group {
+            width: 120px;
+            height: 90%;
+            display: flex;
+            flex-direction: column-reverse;
+            position: relative;
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -35px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .bar-top-value {
+            position: absolute;
+            top: -25px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .block {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            transition: height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Colors */
+        .bg-liab { background: linear-gradient(135deg, #8E8E93, #636366); }
+        .bg-book { background: linear-gradient(135deg, #8E8E93, #636366); opacity: 0.5; }
+        .bg-market-base { background: linear-gradient(135deg, #007AFF, #0056b3); }
+        .bg-gain { background: linear-gradient(135deg, #34C759, #248A3D); }
+        .bg-tax { 
+            background: repeating-linear-gradient(45deg, #FF3B30, #FF3B30 10px, #FF9500 10px, #FF9500 20px);
+            z-index: 2;
+        }
+        .bg-final { background: linear-gradient(135deg, #007AFF, #0051A8); }
+
+        .annotation {
+            position: absolute;
+            right: -80px; top: 50%; transform: translateY(-50%);
+            background: var(--window-bg);
+            color: #FF3B30; font-size: 10px; padding: 2px 6px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            white-space: nowrap;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="window">
+        <div class="title-bar">
+            <div class="traffic-lights">
+                <div class="light close" onclick="location.reload()"></div>
+                <div class="light minimize"></div>
+                <div class="light maximize"></div>
+            </div>
+            <div class="window-title">純資産価額方式 (設例入力モード)</div>
+            <input type="checkbox" id="theme-toggle" class="toggle-switch">
+        </div>
+
+        <div class="content">
+            <!-- Left: Inputs (The Table) -->
+            <div class="controls">
+                
+                <!-- 1. Shares -->
+                <div class="shares-section">
+                    <span class="shares-label">発行済株式数</span>
+                    <input type="number" id="inp-shares" class="mac-input shares-input" value="100000">
+                    <span style="font-size:12px; color:var(--text-secondary);">株</span>
+                </div>
+
+                <!-- 2. The Exam Table (Side by Side) -->
+                <div class="exam-table-container">
+                    
+                    <!-- Left: Assets -->
+                    <table class="exam-table">
+                        <thead>
+                            <tr>
+                                <th class="col-subject">科目</th>
+                                <th class="col-value" style="color:var(--bs-blue)">相続税評価額</th>
+                                <th class="col-value">帳簿価額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>流動資産</td>
+                                <td><input type="number" id="inp-mkt-curr-assets" class="table-input" value="22900"></td>
+                                <td><input type="number" id="inp-book-curr-assets" class="table-input" value="22900"></td>
+                            </tr>
+                            <tr>
+                                <td>固定資産</td>
+                                <td><input type="number" id="inp-mkt-fix-assets" class="table-input" value="13000"></td>
+                                <td><input type="number" id="inp-book-fix-assets" class="table-input" value="10600"></td>
+                            </tr>
+                            <tr class="row-total">
+                                <td>合計</td>
+                                <td><span id="disp-mkt-assets-total" class="total-display">35,900</span></td>
+                                <td><span id="disp-book-assets-total" class="total-display">33,500</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Right: Liabilities -->
+                    <table class="exam-table">
+                        <thead>
+                            <tr>
+                                <th class="col-subject">科目</th>
+                                <th class="col-value" style="color:var(--bs-blue)">相続税評価額</th>
+                                <th class="col-value">帳簿価額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>流動負債</td>
+                                <td><input type="number" id="inp-mkt-curr-liab" class="table-input" value="9500"></td>
+                                <td><input type="number" id="inp-book-curr-liab" class="table-input" value="9500"></td>
+                            </tr>
+                            <tr>
+                                <td>固定負債</td>
+                                <td><input type="number" id="inp-mkt-fix-liab" class="table-input" value="6000"></td>
+                                <td><input type="number" id="inp-book-fix-liab" class="table-input" value="6000"></td>
+                            </tr>
+                            <tr class="row-total">
+                                <td>合計</td>
+                                <td><span id="disp-mkt-liab-total" class="total-display">15,500</span></td>
+                                <td><span id="disp-book-liab-total" class="total-display">15,500</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="text-align:right; font-size:11px; color:var(--text-secondary); margin-bottom:20px;">
+                    単位: 万円 (設例の数値をそのまま入力)
+                </div>
+
+                <!-- Result & Math -->
+                <div class="result-section">
+                    <div style="font-size:12px; opacity:0.9">1株あたりの評価額</div>
+                    <div style="font-size:28px; font-weight:700; margin:5px 0;">¥<span id="final-price">0</span></div>
+                    
+                    <div id="math-display" class="math-wrapper"></div>
+                </div>
+
+            </div>
+
+            <!-- Right: Visualization -->
+            <div class="visualization">
+                
+                <!-- Book B/S -->
+                <div class="bar-group">
+                    <div class="bar-top-value"><span id="viz-book-net">0</span><span style="font-size:10px">万</span></div>
+                    <div id="bar-book-net" class="block bg-book" style="height:100px;">B:簿価純資産</div>
+                    <div id="bar-book-liab" class="block bg-liab" style="height:80px;">負債</div>
+                    <div class="bar-label">帳簿価額<br>(Book)</div>
+                </div>
+
+                <!-- Market B/S -->
+                <div class="bar-group">
+                    <div class="bar-top-value" style="color:var(--bs-blue)"><span id="viz-mkt-net">0</span><span style="font-size:10px">万</span></div>
+                    <div id="bar-gain" class="block bg-gain" style="height:40px;">
+                        含み益
+                        <div class="annotation" id="gain-label">+(A-B)</div>
+                    </div>
+                    <div id="bar-mkt-base" class="block bg-market-base" style="height:100px;">A:時価純資産</div>
+                    <div id="bar-mkt-liab" class="block bg-liab" style="height:80px;">負債</div>
+                    <div class="bar-label">相続税評価額<br>(Market)</div>
+                </div>
+
+                <!-- Final Val -->
+                <div class="bar-group">
+                    <div class="bar-top-value" style="color:var(--bs-green)">¥<span id="viz-final-yen">0</span></div>
+                    <div id="bar-tax" class="block bg-tax" style="height:20px;">▲ 税金37%</div>
+                    <div id="bar-final" class="block bg-final" style="height:120px;">評価額</div>
+                    <div id="bar-ghost-liab" class="block bg-liab" style="height:80px; opacity:0.1;">(負債)</div>
+                    <div class="bar-label">計算結果<br>(Value)</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const TAX_RATE = 0.37;
+
+        // --- DOM Elements ---
+        const inputs = {
+            shares: document.getElementById('inp-shares'),
+            // Assets
+            mktCurrA: document.getElementById('inp-mkt-curr-assets'),
+            bookCurrA: document.getElementById('inp-book-curr-assets'),
+            mktFixA: document.getElementById('inp-mkt-fix-assets'),
+            bookFixA: document.getElementById('inp-book-fix-assets'),
+            // Liabilities
+            mktCurrL: document.getElementById('inp-mkt-curr-liab'),
+            bookCurrL: document.getElementById('inp-book-curr-liab'),
+            mktFixL: document.getElementById('inp-mkt-fix-liab'),
+            bookFixL: document.getElementById('inp-book-fix-liab')
+        };
+
+        const displays = {
+            mktAssetTotal: document.getElementById('disp-mkt-assets-total'),
+            bookAssetTotal: document.getElementById('disp-book-assets-total'),
+            mktLiabTotal: document.getElementById('disp-mkt-liab-total'),
+            bookLiabTotal: document.getElementById('disp-book-liab-total'),
+            
+            finalPrice: document.getElementById('final-price'),
+            math: document.getElementById('math-display'),
+            
+            // Viz Labels
+            vizBookNet: document.getElementById('viz-book-net'),
+            vizMktNet: document.getElementById('viz-mkt-net'),
+            vizFinalYen: document.getElementById('viz-final-yen')
+        };
+
+        const bars = {
+            bookNet: document.getElementById('bar-book-net'),
+            bookLiab: document.getElementById('bar-book-liab'),
+            
+            mktBase: document.getElementById('bar-mkt-base'),
+            gain: document.getElementById('bar-gain'),
+            mktLiab: document.getElementById('bar-mkt-liab'),
+            
+            final: document.getElementById('bar-final'),
+            tax: document.getElementById('bar-tax'),
+            ghostLiab: document.getElementById('bar-ghost-liab'),
+            
+            gainLabel: document.getElementById('gain-label')
+        };
+
+        // --- Helpers ---
+        const formatNum = n => Math.floor(n).toLocaleString();
+        const getVal = el => parseInt(el.value) || 0;
+
+        function update() {
+            // 1. Get Inputs
+            const shares = getVal(inputs.shares) || 1;
+            
+            const mCA = getVal(inputs.mktCurrA);
+            const mFA = getVal(inputs.mktFixA);
+            const bCA = getVal(inputs.bookCurrA);
+            const bFA = getVal(inputs.bookFixA);
+            
+            const mCL = getVal(inputs.mktCurrL);
+            const mFL = getVal(inputs.mktFixL);
+            const bCL = getVal(inputs.bookCurrL);
+            const bFL = getVal(inputs.bookFixL);
+
+            // 2. Calculate Subtotals (Table Display)
+            const mAssetTotal = mCA + mFA;
+            const bAssetTotal = bCA + bFA;
+            const mLiabTotal = mCL + mFL;
+            const bLiabTotal = bCL + bFL;
+
+            displays.mktAssetTotal.textContent = formatNum(mAssetTotal);
+            displays.bookAssetTotal.textContent = formatNum(bAssetTotal);
+            displays.mktLiabTotal.textContent = formatNum(mLiabTotal);
+            displays.bookLiabTotal.textContent = formatNum(bLiabTotal);
+
+            // 3. Net Assets (Logic)
+            const mktNet = Math.max(0, mAssetTotal - mLiabTotal); // A (万円)
+            const bookNet = Math.max(0, bAssetTotal - bLiabTotal); // B (万円)
+
+            // 4. Formula
+            let diff = mktNet - bookNet;
+            let tax = 0;
+            if (diff > 0) {
+                tax = Math.round(diff * TAX_RATE);
+            } else {
+                diff = 0;
+            }
+
+            const finalNetVal = mktNet - tax; // 万円
+            const pricePerShare = Math.floor((finalNetVal * 10000) / shares); // 円
+
+            // 5. Update Result Displays
+            displays.finalPrice.textContent = formatNum(pricePerShare);
+            displays.vizBookNet.textContent = formatNum(bookNet);
+            displays.vizMktNet.textContent = formatNum(mktNet);
+            displays.vizFinalYen.textContent = formatNum(pricePerShare);
+
+            // 6. Math Rendering (KaTeX)
+            const A = formatNum(mktNet * 10000);
+            const B = formatNum(bookNet * 10000);
+            const Tax = formatNum(tax * 10000);
+            const Numerator = formatNum(finalNetVal * 10000);
+            const S = formatNum(shares);
+
+            const tex = `
+            \\begin{aligned}
+             \\text{評価額} &= \\frac{${A} - (${A} - ${B}) \\times 37\\%}{${S}} \\\\[8pt]
+             &= \\frac{${A} - ${Tax}}{${S}} \\\\[8pt]
+             &= \\frac{${Numerator}}{${S}} = \\mathbf{${formatNum(pricePerShare)}} \\text{ 円}
+            \\end{aligned}
+            `;
+            
+            if (window.katex) {
+                katex.render(tex, displays.math, { throwOnError: false, displayMode: true });
+            }
+
+            // 7. Visualization Scaling
+            const maxStack = Math.max(mAssetTotal, bAssetTotal);
+            const scale = maxStack > 0 ? 400 / maxStack : 0.01;
+
+            // Heights
+            const h_bLiab = bLiabTotal * scale;
+            const h_bNet = bookNet * scale;
+            
+            const h_mLiab = mLiabTotal * scale;
+            let h_mBase, h_gain;
+            
+            if (mktNet > bookNet) {
+                h_mBase = h_bNet;
+                h_gain = (mktNet - bookNet) * scale;
+            } else {
+                h_mBase = mktNet * scale;
+                h_gain = 0;
+            }
+
+            const h_tax = tax * scale;
+            const h_final = finalNetVal * scale;
+
+            // Apply Heights
+            bars.bookLiab.style.height = `${h_bLiab}px`;
+            bars.bookNet.style.height = `${h_bNet}px`;
+
+            bars.mktLiab.style.height = `${h_mLiab}px`;
+            bars.mktBase.style.height = `${h_mBase}px`;
+            bars.gain.style.height = `${h_gain}px`;
+
+            bars.ghostLiab.style.height = `${h_mLiab}px`;
+            bars.final.style.height = `${h_final}px`;
+            bars.tax.style.height = `${h_tax}px`;
+
+            // Gain Label
+            if (h_gain < 15) {
+                bars.gain.style.color = 'transparent';
+                bars.gainLabel.style.opacity = 0;
+            } else {
+                bars.gain.style.color = 'white';
+                bars.gainLabel.style.opacity = 1;
+            }
+        }
+
+        // Init
+        document.querySelectorAll('input').forEach(el => el.addEventListener('input', update));
+        document.getElementById('theme-toggle').addEventListener('change', e => document.body.classList.toggle('dark-mode', e.target.checked));
+        
+        // Initial Calculation (wait for KaTeX)
+        setTimeout(update, 500);
+
+    </script>
+</body>
+</html>
