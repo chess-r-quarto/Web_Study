@@ -4,250 +4,310 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #F6F6F6;
-            --container-bg: #FFFFFF;
-            --text-main: #1D1D1F;
-            --text-sub: #86868B;
-            --accent-blue: #007AFF;
-            --item-hover: #F2F2F7;
-            --border-color: #E5E5E5;
-            --system-radius: 12px;
+            /* Lichess Dark Theme Palette */
+            --site-bg: #161512;
+            --card-bg: #262421;
+            --card-hover: #302e2b;
+            --text-main: #bababa;
+            --text-bright: #ffffff;
+            --border: #404040;
+            --accent-orange: #bf811d;
+            --accent-blue: #3692e7;
+            --accent-green: #629924;
+            --shadow: 0 2px 5px rgba(0,0,0,0.5);
+            --font-stack: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
         }
 
         body {
-            background-color: var(--bg-color);
+            background-color: var(--site-bg);
             color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Noto Sans JP", sans-serif;
+            font-family: var(--font-stack);
             margin: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
         }
 
-        .window {
-            width: 90%;
-            max-width: 800px;
-            background: var(--container-bg);
-            border-radius: var(--system-radius);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--border-color);
-        }
-
-        /* macOS Title Bar */
-        .title-bar {
-            height: 52px;
-            background: var(--container-bg);
+        /* Top Navigation Bar (Lichess Header Style) */
+        .header {
+            width: 100%;
+            height: 50px;
+            background-color: #1c1b19; /* Slightly lighter than bg */
+            border-bottom: 1px solid #302e2c;
             display: flex;
             align-items: center;
-            padding: 0 16px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 0 20px;
+            box-sizing: border-box;
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 100;
         }
 
-        .traffic-lights {
-            display: flex;
-            gap: 8px;
-            width: 60px;
-        }
-
-        .light {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-        .red { background: #FF5F57; }
-        .yellow { background: #FEBC2E; }
-        .green { background: #28C840; }
-
-        .title-text {
-            flex: 1;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-sub);
-            margin-right: 60px; /* balance traffic lights */
-        }
-
-        /* Content Area */
-        .content {
-            padding: 24px 32px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .category-section {
-            margin-bottom: 32px;
-        }
-
-        .category-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-sub);
+        .brand {
+            font-size: 20px;
+            font-weight: 300;
+            color: var(--text-bright);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 12px;
-            padding-left: 4px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 12px;
-        }
-
-        /* Module Item */
-        .module-item {
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
-            padding: 12px;
-            background: var(--container-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            text-decoration: none;
+            gap: 10px;
+        }
+
+        .brand span {
+            font-weight: 700;
             color: var(--text-main);
-            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
 
-        .module-item:hover {
-            background: var(--item-hover);
-            border-color: var(--accent-blue);
-            transform: translateY(-1px);
+        /* Main Lobby Container */
+        .lobby-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr; /* Sidebar + Main Content */
+            gap: 20px;
         }
 
-        .icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            margin-right: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
+        @media (max-width: 768px) {
+            .lobby-container {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .module-info {
+        /* Sidebar (Quick Pairing Style) */
+        .sidebar {
             display: flex;
             flex-direction: column;
+            gap: 10px;
         }
 
-        .module-name {
-            font-size: 13px;
+        .quick-link {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 3px;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.1s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .quick-link:hover {
+            background: var(--card-hover);
+            color: var(--text-bright);
+            border-bottom-color: var(--accent-orange);
+        }
+
+        /* Main Grid (Game Lobby Style) */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-header {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #6b6b6b;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-header::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #302e2c;
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        /* App Card (Game Variant Style) */
+        .app-card {
+            background-color: var(--card-bg);
+            border-radius: 3px;
+            padding: 15px;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100px;
+            position: relative;
+            transition: transform 0.1s, background 0.1s;
+            border: 1px solid transparent;
+            box-shadow: var(--shadow);
+        }
+
+        .app-card:hover {
+            background-color: var(--card-hover);
+            transform: translateY(-2px);
+            border-color: #404040;
+            color: var(--text-bright);
+        }
+
+        .card-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .card-title {
+            font-size: 16px;
             font-weight: 500;
+            line-height: 1.2;
         }
 
-        .module-desc {
-            font-size: 11px;
-            color: var(--text-sub);
+        .card-meta {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
         }
 
-        /* Categories Color Palette */
-        .bg-blue { background: #007AFF; }
-        .bg-orange { background: #FF9500; }
-        .bg-green { background: #34C759; }
-        .bg-purple { background: #AF52DE; }
-        .bg-pink { background: #FF2D55; }
-        .bg-gray { background: #8E8E93; }
-
-        /* Custom Scrollbar */
-        .content::-webkit-scrollbar { width: 8px; }
-        .content::-webkit-scrollbar-track { background: transparent; }
-        .content::-webkit-scrollbar-thumb {
-            background: #D1D1D6;
-            border-radius: 4px;
+        /* Status Indicator simulating Lichess "online" dots */
+        .status-dot {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #444;
         }
+        
+        .app-card:hover .status-dot {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 5px var(--accent-green);
+        }
+
+        /* Custom Accents for Categories */
+        .accent-blue .card-icon { color: var(--accent-blue); }
+        .accent-orange .card-icon { color: var(--accent-orange); }
+        .accent-green .card-icon { color: var(--accent-green); }
+        .accent-purple .card-icon { color: #9b59b6; }
+        
     </style>
 </head>
 <body>
 
-<div class="window">
-    <div class="title-bar">
-        <div class="traffic-lights">
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
+    <header class="header">
+        <div class="brand">
+            <span>WEB</span> STUDY PORTAL
         </div>
-        <div class="title-text">Study Modules Portal</div>
-    </div>
-    
-    <div class="content" id="portal-root">
-        <!-- Rendered by JS -->
-    </div>
-</div>
+    </header>
 
-<script>
-    const APP_DATA = [
-        {
-            category: "Data Science & Dev",
-            items: [
-                { name: "Data Science", file: "DS_Quiz.html", icon: "📊", color: "bg-purple" },
-                { name: "R Programming", file: "R_Quiz.html", icon: "R", color: "bg-blue" },
-                { name: "Data Mgmt", file: "Data_Management.html", icon: "🗄", color: "bg-gray" },
-                { name: "Devided Calc", file: "Devided_Calc.html", icon: "➗", color: "bg-orange" },
-                { name: "Informative", file: "Informative.html", icon: "ℹ️", color: "bg-blue" }
-            ]
-        },
-        {
-            category: "Finance & Tax",
-            items: [
-                { name: "Corporate Tax", file: "Corporate_tax_master.html", icon: "🏢", color: "bg-pink" },
-                { name: "FOMC Master", file: "FOMC_Master.html", icon: "🏦", color: "bg-green" },
-                { name: "Asset Tax", file: "Long_term_sell_buy_tax", icon: "📈", color: "bg-orange" },
-                { name: "Inheritance Tax", file: "FP1_souzoku.html", icon: "📜", color: "bg-pink" }
-            ]
-        },
-        {
-            category: "Financial Planning (FP1)",
-            items: [
-                { name: "FP1 FAR", file: "FP1_FAR.html", icon: "⚖️", color: "bg-blue" },
-                { name: "FP1 Pension", file: "FP1_Pension.html", icon: "👴", color: "bg-green" },
-                { name: "FP1 Portfolio", file: "FP1_Portfolio.html", icon: "💼", color: "bg-purple" }
-            ]
-        },
-        {
-            category: "Language",
-            items: [
-                { name: "English Word", file: "English_Word.html", icon: "A", color: "bg-orange" }
-            ]
-        }
-    ];
+    <div class="lobby-container">
+        <!-- Sidebar: Quick Access / Meta Info -->
+        <aside class="sidebar">
+            <div style="padding: 10px; color: #666; font-size: 12px; text-transform: uppercase; font-weight: bold;">Quick Links</div>
+            <a href="DS_Quiz.html" class="quick-link">
+                <span style="color: var(--accent-blue)">📊</span> Data Science
+            </a>
+            <a href="leagal_compiler.html" class="quick-link">
+                <span style="color: var(--accent-orange)">⚖️</span> Legal Compiler
+            </a>
+            <a href="R_Quiz.html" class="quick-link">
+                <span style="color: var(--accent-green)">R</span> R Programming
+            </a>
+        </aside>
 
-    function renderPortal() {
-        const root = document.getElementById('portal-root');
-        
-        APP_DATA.forEach(section => {
-            const sectionEl = document.createElement('div');
-            sectionEl.className = 'category-section';
+        <!-- Main Content: App Grid -->
+        <main class="main-content" id="app-root">
+            <!-- JS will inject content here -->
+        </main>
+    </div>
+
+    <script>
+        const CATEGORIES = [
+            {
+                id: "finance",
+                title: "Finance & Tax Strategy",
+                apps: [
+                    { title: "Corporate Tax", url: "Corporate_tax_master.html", icon: "♟️", type: "Tax", accent: "accent-orange" },
+                    { title: "FOMC Master", url: "FOMC_Master.html", icon: "🏛️", type: "Economy", accent: "accent-green" },
+                    { title: "Asset Value", url: "asset_value.html", icon: "💎", type: "Simulation", accent: "accent-blue" },
+                    { title: "Long Term Tax", url: "Long_term_sell_buy_tax", icon: "📈", type: "Tax", accent: "accent-orange" },
+                    { title: "Divided Calc", url: "Devided_Calc.html", icon: "➗", type: "Calc", accent: "accent-purple" },
+                ]
+            },
+            {
+                id: "fp1",
+                title: "FP1 Studies (Endgame)",
+                apps: [
+                    { title: "FP1 FAR", url: "FP1_FAR.html", icon: "📕", type: "Regulation", accent: "accent-blue" },
+                    { title: "FP1 Pension", url: "FP1_Pension.html", icon: "👴", type: "Social", accent: "accent-green" },
+                    { title: "FP1 Portfolio", url: "FP1_Portfolio.html", icon: "💼", type: "Asset", accent: "accent-purple" },
+                    { title: "FP1 Souzoku", url: "FP1_souzoku.html", icon: "📜", type: "Inheritance", accent: "accent-orange" },
+                ]
+            },
+            {
+                id: "logic",
+                title: "Logic & Development",
+                apps: [
+                    { title: "Legal Compiler", url: "leagal_compiler.html", icon: "⚖️", type: "Parser", accent: "accent-orange" },
+                    { title: "Data Science", url: "DS_Quiz.html", icon: "📊", type: "Analysis", accent: "accent-blue" },
+                    { title: "R Quiz", url: "R_Quiz.html", icon: "R", type: "Coding", accent: "accent-blue" },
+                    { title: "Data Mgmt", url: "Data_Management.html", icon: "🗄️", type: "DB", accent: "accent-purple" },
+                    { title: "Informative", url: "Informative.html", icon: "ℹ️", type: "Info", accent: "accent-green" },
+                ]
+            },
+            {
+                id: "language",
+                title: "Language (Openings)",
+                apps: [
+                    { title: "Vocab Quiz", url: "vocab_quiz.html", icon: "🔤", type: "Drill", accent: "accent-green" },
+                    { title: "English Word", url: "English_Word.html", icon: "A", type: "Vocabulary", accent: "accent-green" },
+                ]
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const root = document.getElementById('app-root');
             
-            sectionEl.innerHTML = `
-                <div class="category-title">${section.category}</div>
-                <div class="grid">
-                    ${section.items.map(item => `
-                        <a href="${item.file}" class="module-item">
-                            <div class="icon ${item.color}">${item.icon}</div>
-                            <div class="module-info">
-                                <span class="module-name">${item.name}</span>
-                                <span class="module-desc">${item.file.split('.').pop()}</span>
-                            </div>
-                        </a>
-                    `).join('')}
-                </div>
-            `;
-            root.appendChild(sectionEl);
+            CATEGORIES.forEach(cat => {
+                // Section Header
+                const header = document.createElement('div');
+                header.className = 'section-header';
+                header.textContent = cat.title;
+                root.appendChild(header);
+
+                // Grid Container
+                const grid = document.createElement('div');
+                grid.className = 'app-grid';
+
+                cat.apps.forEach(app => {
+                    const card = document.createElement('a');
+                    card.href = app.url;
+                    card.className = `app-card ${app.accent}`;
+                    
+                    card.innerHTML = `
+                        <div class="status-dot"></div>
+                        <div class="card-icon">${app.icon}</div>
+                        <div>
+                            <div class="card-title">${app.title}</div>
+                            <div class="card-meta">${app.type}</div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                root.appendChild(grid);
+            });
         });
-    }
-
-    document.addEventListener('DOMContentLoaded', renderPortal);
-</script>
-
+    </script>
 </body>
 </html>
