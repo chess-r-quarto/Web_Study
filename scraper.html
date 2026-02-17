@@ -35,6 +35,14 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #505050; 
         }
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #3692e7;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #3692e7;
+        }
     </style>
 </head>
 <body>
@@ -62,18 +70,19 @@
         </svg>
     );
 
-    // Fixed: Wrapped multi-element icons in Fragments <></> to prevent Syntax Errors
     const Icons = {
         Globe: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />, 
         GlobeReal: <><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
-        Settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></>,
+        Settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></>,
         AlertCircle: <><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></>,
         RefreshCw: <><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></>,
         Terminal: <><polyline points="4 17 10 11 4 5" /><line x1="12" x2="20" y1="19" y2="19" /></>,
         Download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></>,
         Check: <polyline points="20 6 9 17 4 12" />,
         Copy: <><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></>,
-        FileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></>
+        FileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></>,
+        Link: <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />,
+        Image: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></>
     };
 
     const App = () => {
@@ -84,6 +93,12 @@
         const [parsedMeta, setParsedMeta] = useState(null);
         const [copySuccess, setCopySuccess] = useState(false);
         const [statusMsg, setStatusMsg] = useState('');
+        
+        // New Settings State
+        const [settings, setSettings] = useState({
+            autoAnchor: true,
+            expandImages: true
+        });
 
         // Lichess Dark Mode Styles
         const styles = {
@@ -104,11 +119,25 @@
             badge: "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-[#302e2c] text-[#8c8c8c] border border-[#404040]",
             infoBox: "bg-[#302e2c] p-3 rounded border border-[#404040] text-xs space-y-1 text-[#a0a0a0]",
             errorBox: "bg-[#3c1f1f] text-[#ff8080] p-3 rounded text-sm flex gap-2 items-start border border-[#5c2b2b]",
-            loadingBox: "bg-[#1d2633] text-[#3692e7] p-3 rounded text-sm flex gap-2 items-center border border-[#233347]"
+            loadingBox: "bg-[#1d2633] text-[#3692e7] p-3 rounded text-sm flex gap-2 items-center border border-[#233347]",
+            toggleRow: "flex items-center justify-between py-2 border-b border-[#302e2c] last:border-0",
+            toggleText: "text-xs font-medium text-[#a0a0a0]"
         };
 
-        // --- Parser Logic ---
+        const toggleSetting = (key) => {
+            setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+        };
 
+        const Toggle = ({ active, onToggle }) => (
+            <div 
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer ${active ? 'bg-[#3692e7]' : 'bg-[#404040]'}`}
+                onClick={onToggle}
+            >
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition duration-200 ${active ? 'translate-x-5' : 'translate-x-1'}`} />
+            </div>
+        );
+
+        // --- Parser Logic ---
         const parseUrl = (inputUrl) => {
             try {
                 const urlObj = new URL(inputUrl);
@@ -183,7 +212,7 @@
             return textSJIS;
         };
 
-        // --- Parsing Functions (Same as before) ---
+        // --- Parsing Functions ---
         const parseDat = (text, threadTitle) => {
             const lines = text.split('\n');
             const posts = [];
@@ -332,8 +361,6 @@
 
                 // --- Generate Markdown with AI YAML Header ---
                 const timestamp = new Date().toISOString();
-                
-                // English System Prompt in YAML format
                 const yamlHeader = `---
 type: 5ch_thread_archive
 parsed_at: "${timestamp}"
@@ -355,10 +382,30 @@ structure_info:
 `;
 
                 let md = yamlHeader + `# ${title}\n\nSource: ${meta.original}\n\n---\n\n`;
+                
                 posts.forEach(p => {
+                    let message = p.message;
+                    
+                    // --- ENHANCEMENT: Auto-Anchor Link ---
+                    if (settings.autoAnchor) {
+                        // Replace >>123 with [>>123](#123)
+                        message = message.replace(/>>(\d+)/g, '[>>$1](#$1)');
+                    }
+
+                    // --- ENHANCEMENT: Auto-Image Expand ---
+                    if (settings.expandImages) {
+                        // Detect http(s) links ending in image extensions
+                        // Use regex that captures URL. Note: 5ch often omits protocol or uses ttp, 
+                        // but cleaner expects http/https. We stick to http/https for safety.
+                        message = message.replace(
+                            /(https?:\/\/[^\s<>]+\.(?:jpg|jpeg|png|gif|webp))/gi, 
+                            '![]($1)'
+                        );
+                    }
+
                     md += `### ${p.number} : ${p.name}\n`;
                     md += `> ${p.date} ${p.uid}\n\n`;
-                    md += `${p.message}\n\n`;
+                    md += `${message}\n\n`;
                     md += `---\n\n`;
                 });
 
@@ -383,7 +430,7 @@ structure_info:
         const downloadMarkdown = () => {
             if (!markdown) return;
             let fileName = 'thread.md';
-            const titleMatch = markdown.match(/^# (.*)\n/m); // Regex modified to skip YAML
+            const titleMatch = markdown.match(/^# (.*)\n/m); 
             if (titleMatch && titleMatch[1]) {
                 fileName = titleMatch[1].trim().replace(/[\\/:*?"<>|]/g, '_') + '.md';
             }
@@ -406,7 +453,7 @@ structure_info:
                         <span>Universal Thread Parser</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className={styles.badge}>v3.0 Lichess Dark / AI-YAML</span>
+                        <span className={styles.badge}>v3.1 Enhanced</span>
                     </div>
                 </header>
 
@@ -430,6 +477,31 @@ structure_info:
                                 <p className="text-xs text-[#666] mt-2 ml-1">
                                     2ch.sc (全サーバー) / 5ch.net 対応。
                                 </p>
+                            </div>
+
+                            {/* Settings Toggles */}
+                            <div className="bg-[#211f1d] p-3 rounded border border-[#302e2c] space-y-1">
+                                <label className={styles.label}>Formatting Options</label>
+                                <div className={styles.toggleRow}>
+                                    <div className="flex items-center gap-2">
+                                        <Icon path={Icons.Link} size={14} className="text-[#666]" />
+                                        <span className={styles.toggleText}>Auto-link Anchors (>>1)</span>
+                                    </div>
+                                    <Toggle 
+                                        active={settings.autoAnchor} 
+                                        onToggle={() => toggleSetting('autoAnchor')} 
+                                    />
+                                </div>
+                                <div className={styles.toggleRow}>
+                                    <div className="flex items-center gap-2">
+                                        <Icon path={Icons.Image} size={14} className="text-[#666]" />
+                                        <span className={styles.toggleText}>Expand Image URLs</span>
+                                    </div>
+                                    <Toggle 
+                                        active={settings.expandImages} 
+                                        onToggle={() => toggleSetting('expandImages')} 
+                                    />
+                                </div>
                             </div>
 
                             {parsedMeta && (
