@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         /* Lichess / Dark Mode Theme */
         body { background-color: #161512; color: #bababa; font-family: 'Noto Sans JP', sans-serif; }
@@ -46,6 +47,7 @@
         // グローバル変数の型宣言
         declare const JSZip: any;
         declare const lucide: any;
+        declare const mammoth: any;
 
         interface ParsedDocument {
             title: string;
@@ -226,10 +228,10 @@ structure_summary:
         };
 
         // --- Core Logic 2: Legacy HTML Parsing (Master Class) ---
-        const parseReikiHTML = (htmlText: string): ParsedDocument => {
+        const parseReikiHTML = (htmlText: string, fallbackTitle: string = "Unknown_Legacy_Law"): ParsedDocument => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, "text/html");
-            const title = normalizeText(doc.querySelector('title')?.textContent) || "Unknown_Legacy_Law";
+            const title = normalizeText(doc.querySelector('title')?.textContent) || fallbackTitle;
             
             let mdBody = `# ${title}\n\n`;
             const stats: DocStats = { part: 0, chapter: 0, section: 0, article: 0, paragraph: 0, item: 0 };
@@ -364,14 +366,35 @@ structure_summary:
                         if (fname.endsWith('.zip')) {
                             addLog(`Reading archive: ${file.name}`);
                             const loadedZip = await JSZip.loadAsync(file);
-                            const xmlFiles = Object.keys(loadedZip.files).filter(n => n.endsWith('.xml'));
-                            for (const xmlPath of xmlFiles) {
-                                const xmlText = await loadedZip.files[xmlPath].async("text");
-                                const { title, content } = parseLegalXML(xmlText);
-                                const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
-                                outputZip.file(`${safeName}.md`, content);
-                                processedCount++;
-                                addLog(`Compiled XML: ${title}`);
+                            const processableFiles = Object.keys(loadedZip.files).filter(n => !n.startsWith('__MACOSX/') && (n.endsWith('.xml') || n.endsWith('.html') || n.endsWith('.htm') || n.endsWith('.docx')));
+                            
+                            for (const filePath of processableFiles) {
+                                const lowerPath = filePath.toLowerCase();
+                                const fallbackTitle = filePath.split('/').pop()?.replace(/\.[^/.]+$/, "") || "Unknown";
+                                
+                                if (lowerPath.endsWith('.xml')) {
+                                    const xmlText = await loadedZip.files[filePath].async("text");
+                                    const { title, content } = parseLegalXML(xmlText);
+                                    const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
+                                    outputZip.file(`${safeName}.md`, content);
+                                    processedCount++;
+                                    addLog(`Compiled XML: ${title}`);
+                                } else if (lowerPath.endsWith('.html') || lowerPath.endsWith('.htm')) {
+                                    const htmlText = await loadedZip.files[filePath].async("text");
+                                    const { title, content } = parseReikiHTML(htmlText, fallbackTitle);
+                                    const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
+                                    outputZip.file(`${safeName}_legacy.md`, content);
+                                    processedCount++;
+                                    addLog(`Compiled HTML: ${title}`);
+                                } else if (lowerPath.endsWith('.docx')) {
+                                    const arrayBuffer = await loadedZip.files[filePath].async("arraybuffer");
+                                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                                    const { title, content } = parseReikiHTML(result.value, fallbackTitle);
+                                    const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
+                                    outputZip.file(`${safeName}_docx.md`, content);
+                                    processedCount++;
+                                    addLog(`Compiled DOCX: ${title}`);
+                                }
                             }
                         } else if (fname.endsWith('.xml')) {
                             const xmlText = await readFileAuto(file); 
@@ -384,12 +407,25 @@ structure_summary:
                         } else if (fname.endsWith('.html') || fname.endsWith('.htm')) {
                             addLog(`Reading Legacy HTML: ${file.name}`);
                             const rawText = await readFileAuto(file); 
+                            const fallbackTitle = file.name.replace(/\.[^/.]+$/, "");
                             
-                            const { title, content } = parseReikiHTML(rawText);
+                            const { title, content } = parseReikiHTML(rawText, fallbackTitle);
                             const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
                             outputZip.file(`${safeName}_legacy.md`, content);
                             processedCount++;
                             addLog(`Compiled Legacy: ${title}`);
+
+                        } else if (fname.endsWith('.docx')) {
+                            addLog(`Reading DOCX: ${file.name}`);
+                            const arrayBuffer = await file.arrayBuffer();
+                            const result = await mammoth.convertToHtml({ arrayBuffer });
+                            const fallbackTitle = file.name.replace(/\.[^/.]+$/, "");
+                            
+                            const { title, content } = parseReikiHTML(result.value, fallbackTitle);
+                            const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
+                            outputZip.file(`${safeName}_docx.md`, content);
+                            processedCount++;
+                            addLog(`Compiled DOCX: ${title}`);
                         }
                     }
 
@@ -469,7 +505,7 @@ structure_summary:
                                     ref={fileInputRef} 
                                     className="hidden" 
                                     multiple 
-                                    accept=".xml,.zip,.html,.htm" 
+                                    accept=".xml,.zip,.html,.htm,.docx" 
                                     onChange={handleFileInputChange} 
                                 />
                                 
@@ -484,7 +520,7 @@ structure_summary:
                                         <div>
                                             <p className="text-base text-[#bababa]">Drop Source Code</p>
                                             <p className="text-[10px] text-[#606060] mt-2 uppercase tracking-widest font-mono">
-                                                XML (v5) / ZIP / HTML (Legacy)
+                                                XML (v5) / ZIP / HTML (Legacy) / DOCX
                                             </p>
                                         </div>
                                     </div>
