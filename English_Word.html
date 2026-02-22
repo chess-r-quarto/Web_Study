@@ -1,444 +1,449 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Check, X, ArrowRight, RefreshCw, Settings, BookOpen, Clipboard, Play, UploadCloud, FileJson } from 'lucide-react';
-
-// --- デフォルトデータ ---
-const DEFAULT_DATA = [
-  {
-    id: 1,
-    word: "unprecedented",
-    meaning: "前例のない",
-    wrong: "予測可能な",
-    context: "The court made an unprecedented ruling.",
-    source: "BBC News"
-  },
-  {
-    id: 2,
-    word: "ratify",
-    meaning: "批准する",
-    wrong: "棄却する",
-    context: "Parliament is expected to ratify the agreement.",
-    source: "Global Politics"
-  },
-  {
-    id: 3,
-    word: "plaintiff",
-    meaning: "原告",
-    wrong: "被告",
-    context: "The plaintiff argued that the contract was breached.",
-    source: "Legal Daily"
-  },
-  {
-    id: 4,
-    word: "mitigate",
-    meaning: "軽減する",
-    wrong: "悪化させる",
-    context: "Measures were taken to mitigate the impact.",
-    source: "Science Today"
-  },
-  {
-    id: 5,
-    word: "sovereignty",
-    meaning: "主権",
-    wrong: "従属性",
-    context: "Respect for national sovereignty is a core principle.",
-    source: "UN Charter"
-  }
-];
-
-// --- macOS風コンポーネント ---
-
-const TrafficLights = ({ onRed, onYellow, onGreen }) => (
-  <div className="flex gap-2 group">
-    <button 
-      onClick={onRed}
-      className="w-3 h-3 rounded-full bg-[#FF5F57] border border-[#E0443E] shadow-sm flex items-center justify-center hover:bg-[#FF5F57]/80 active:bg-[#BF4C46] transition-colors focus:outline-none group-hover:after:content-['×'] group-hover:after:text-[#5c0502] group-hover:after:text-[8px] group-hover:after:font-bold"
-      title="Reset App"
-    />
-    <button 
-      onClick={onYellow}
-      className="w-3 h-3 rounded-full bg-[#FEBC2E] border border-[#D89E24] shadow-sm flex items-center justify-center hover:bg-[#FEBC2E]/80 active:bg-[#BF8E22] transition-colors focus:outline-none group-hover:after:content-['-'] group-hover:after:text-[#664d0d] group-hover:after:text-[8px] group-hover:after:font-bold"
-      title="Exit Fullscreen"
-    />
-    <button 
-      onClick={onGreen}
-      className="w-3 h-3 rounded-full bg-[#28C840] border border-[#1AAB29] shadow-sm flex items-center justify-center hover:bg-[#28C840]/80 active:bg-[#1E9630] transition-colors focus:outline-none group-hover:after:content-['+'] group-hover:after:text-[#0b4d12] group-hover:after:text-[8px] group-hover:after:font-bold"
-      title="Enter Fullscreen"
-    />
-  </div>
-);
-
-const MacWindow = ({ children, title = "Vocab.app", className = "", onReset, onExitFS, onEnterFS }) => (
-  <div className={`relative bg-white/70 backdrop-blur-2xl rounded-2xl border border-white/20 shadow-2xl flex flex-col overflow-hidden ${className}`}>
-    <div className="h-10 bg-white/50 backdrop-blur-sm border-b border-black/5 flex items-center px-4 shrink-0 transition-colors hover:bg-white/60">
-      <TrafficLights onRed={onReset} onYellow={onExitFS} onGreen={onEnterFS} />
-      <div className="absolute left-0 right-0 text-center text-sm font-semibold text-gray-600 pointer-events-none select-none">
-        {title}
-      </div>
-    </div>
-    <div className="flex-1 flex flex-col relative overflow-hidden">
-      {children}
-    </div>
-  </div>
-);
-
-const Button = ({ onClick, children, variant = "primary", className = "", disabled = false, icon: Icon }) => {
-  const baseStyle = "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed";
-  
-  const variants = {
-    primary: "bg-[#007AFF] text-white shadow-sm hover:bg-[#0062CC] border border-transparent",
-    secondary: "bg-white text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50",
-    ghost: "bg-transparent text-gray-500 hover:bg-black/5 hover:text-gray-900",
-    glass: "bg-white/40 hover:bg-white/60 text-gray-800 border border-white/20 backdrop-blur-md shadow-sm",
-    danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"
-  };
-
-  return (
-    <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
-      {Icon && <Icon size={16} />}
-      {children}
-    </button>
-  );
-};
-
-export default function App() {
-  const [gameState, setGameState] = useState('start'); 
-  const [questions, setQuestions] = useState(DEFAULT_DATA);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
-  const [shuffledChoices, setShuffledChoices] = useState([]);
-  
-  // JSON Editor State
-  const [jsonInput, setJsonInput] = useState(JSON.stringify(DEFAULT_DATA, null, 2));
-  const [jsonError, setJsonError] = useState(null);
-  const fileInputRef = useRef(null);
-
-  const currentQuestion = questions[currentIndex];
-
-  useEffect(() => {
-    if (currentQuestion) {
-      const choices = [
-        { text: currentQuestion.meaning, isCorrect: true },
-        { text: currentQuestion.wrong, isCorrect: false }
-      ];
-      setShuffledChoices(choices.sort(() => Math.random() - 0.5));
-    }
-  }, [currentQuestion, currentIndex]);
-
-  const handleAnswer = (isCorrect) => {
-    setLastAnswerCorrect(isCorrect);
-    if (isCorrect) setScore(s => s + 1);
-    setShowFeedback(true);
-  };
-
-  const nextQuestion = () => {
-    setShowFeedback(false);
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(i => i + 1);
-    } else {
-      setGameState('result');
-    }
-  };
-
-  const restartGame = () => {
-    setScore(0);
-    setCurrentIndex(0);
-    setShowFeedback(false);
-    setGameState('start');
-  };
-
-  // --- Import Logic ---
-  
-  // 1. Paste from Clipboard
-  const handlePasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      setJsonInput(text);
-      setJsonError(null); 
-    } catch (err) {
-      setJsonError("Clipboard access denied. Please paste manually (Cmd+V).");
-    }
-  };
-
-  // 2. Load from Local File
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target.result;
-      try {
-        // Validate JSON immediately upon load
-        JSON.parse(content); 
-        setJsonInput(content);
-        setJsonError(null);
-      } catch (error) {
-        setJsonError("Invalid JSON file: " + error.message);
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vocab.app - Lichess Style</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.2.0"
       }
-    };
-    reader.readAsText(file);
-    // Reset input so the same file can be selected again if needed
-    event.target.value = '';
-  };
-
-  const triggerFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  // 3. Import & Run
-  const handleImportAndRun = () => {
-    try {
-      const parsed = JSON.parse(jsonInput);
-      if (!Array.isArray(parsed)) throw new Error("Format Error: Data must be a JSON Array [...]");
-      if (parsed.length === 0) throw new Error("Data Error: The array is empty.");
-      if (!parsed[0].word || !parsed[0].meaning) throw new Error("Structure Error: Missing 'word' or 'meaning' fields.");
-      
-      setQuestions(parsed);
-      setJsonError(null);
-      restartGame(); 
-      setGameState('playing'); 
-    } catch (e) {
-      setJsonError(e.message);
     }
-  };
-
-  // --- Window Control Handlers ---
-  const handleFullScreenEnter = () => {
-    const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(err => console.log(err));
+  </script>
+  <script>
+    Babel.registerPreset('tsx', {
+      presets: [
+        [Babel.availablePresets['typescript'], { isTSX: true, allExtensions: true }],
+        Babel.availablePresets['react']
+      ]
+    });
+  </script>
+  <style>
+    /* Lichess style base adjustments */
+    body {
+      background-color: #161512;
+      color: #dbd9d6;
+      font-family: 'Noto Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
-  };
-
-  const handleFullScreenExit = () => {
-    if (document.exitFullscreen && document.fullscreenElement) {
-      document.exitFullscreen().catch(err => console.log(err));
+    ::selection {
+      background-color: #1b78d0;
+      color: #ffffff;
     }
-  };
+    textarea {
+      scrollbar-color: #383634 #161512;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-type="module" data-presets="tsx">
+    import React, { useState, useEffect, useRef } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { 
+      Check, X, ArrowRight, RefreshCw, Settings, BookOpen, 
+      Clipboard, Play, UploadCloud, FileJson, RotateCcw, 
+      Minimize, Maximize 
+    } from 'lucide-react';
 
-  const handleAppReset = () => {
-    restartGame();
-  };
+    // --- Types ---
+    interface QuestionData {
+      id: number;
+      word: string;
+      meaning: string;
+      wrong: string;
+      context: string;
+      source: string;
+    }
 
-  const WindowWrapper = ({ children, title, className }) => (
-    <MacWindow 
-      title={title} 
-      className={className}
-      onReset={handleAppReset}
-      onEnterFS={handleFullScreenEnter}
-      onExitFS={handleFullScreenExit}
-    >
-      {children}
-    </MacWindow>
-  );
+    interface Choice {
+      text: string;
+      isCorrect: boolean;
+    }
 
-  // --- Screens ---
+    // --- Default Data ---
+    const DEFAULT_DATA: QuestionData[] = [
+      { id: 1, word: "unprecedented", meaning: "前例のない", wrong: "予測可能な", context: "The court made an unprecedented ruling.", source: "BBC News" },
+      { id: 2, word: "ratify", meaning: "批准する", wrong: "棄却する", context: "Parliament is expected to ratify the agreement.", source: "Global Politics" },
+      { id: 3, word: "plaintiff", meaning: "原告", wrong: "被告", context: "The plaintiff argued that the contract was breached.", source: "Legal Daily" },
+      { id: 4, word: "mitigate", meaning: "軽減する", wrong: "悪化させる", context: "Measures were taken to mitigate the impact.", source: "Science Today" },
+      { id: 5, word: "sovereignty", meaning: "主権", wrong: "従属性", context: "Respect for national sovereignty is a core principle.", source: "UN Charter" }
+    ];
 
-  if (gameState === 'start') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#E0EAFC] to-[#CFDEF3] font-sans selection:bg-[#007AFF] selection:text-white">
-        <WindowWrapper className="w-full max-w-md h-[500px]">
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-            <div className="w-20 h-20 bg-gradient-to-tr from-[#007AFF] to-[#5AC8FA] rounded-[22px] shadow-lg flex items-center justify-center text-white mb-2">
-              <BookOpen size={40} strokeWidth={2.5} />
-            </div>
-            
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Vocabulary</h1>
-              <p className="text-gray-500 text-sm">Version 1.3 • {questions.length} words loaded</p>
-            </div>
+    // --- Components ---
 
-            <div className="w-full max-w-xs space-y-3 pt-4">
-              <Button onClick={() => setGameState('playing')} className="w-full h-10 shadow-md" icon={ArrowRight}>
-                Start Session
-              </Button>
-              <Button variant="secondary" onClick={() => setGameState('editor')} className="w-full h-10" icon={Settings}>
-                Import JSON
-              </Button>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50/50 p-3 text-center border-t border-gray-100">
-             <p className="text-[10px] text-gray-400 font-medium">DESIGNED FOR MACOS</p>
-          </div>
-        </WindowWrapper>
+    const WindowControls = ({ onReset, onExitFS, onEnterFS }: { onReset: () => void, onExitFS: () => void, onEnterFS: () => void }) => (
+      <div className="flex gap-3 text-[#8c8c8c]">
+        <button onClick={onReset} className="hover:text-white transition-colors" title="Reset App"><RotateCcw size={16} /></button>
+        <button onClick={onExitFS} className="hover:text-white transition-colors" title="Exit Fullscreen"><Minimize size={16} /></button>
+        <button onClick={onEnterFS} className="hover:text-white transition-colors" title="Enter Fullscreen"><Maximize size={16} /></button>
       </div>
     );
-  }
 
-  if (gameState === 'editor') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#E0EAFC] to-[#CFDEF3] font-sans">
-        <WindowWrapper title="Import Data" className="w-full max-w-2xl h-[600px]">
-          <div className="flex flex-col h-full">
-            {/* Hidden Input for File Upload */}
-            <input 
-              type="file" 
-              accept=".json" 
-              ref={fileInputRef} 
-              onChange={handleFileSelect} 
-              className="hidden" 
-            />
+    interface AppContainerProps {
+      children: React.ReactNode;
+      title?: string;
+      className?: string;
+      onReset: () => void;
+      onExitFS: () => void;
+      onEnterFS: () => void;
+    }
 
-            <div className="bg-gray-100/50 border-b border-gray-200 p-2 flex justify-between items-center">
-               <div className="flex gap-2">
-                 <Button variant="ghost" onClick={triggerFileUpload} className="h-7 text-xs px-2 text-gray-700 font-medium hover:bg-white/60" icon={UploadCloud}>
-                   Load File...
-                 </Button>
-                 <Button variant="ghost" onClick={handlePasteFromClipboard} className="h-7 text-xs px-2 text-gray-500 hover:bg-white/60" icon={Clipboard}>
-                   Paste
-                 </Button>
-               </div>
-               <Button variant="ghost" onClick={() => setGameState('start')} className="h-7 text-xs px-2">Cancel</Button>
-            </div>
+    const AppContainer = ({ children, title = "Vocab.app", className = "", onReset, onExitFS, onEnterFS }: AppContainerProps) => (
+      <div className={`w-full max-w-3xl mx-auto flex flex-col bg-[#262421] shadow-xl rounded-sm overflow-hidden border border-[#383634] ${className}`}>
+        <div className="h-12 bg-[#1b1a19] border-b border-[#383634] flex items-center justify-between px-4 shrink-0">
+          <div className="font-bold text-[#dbd9d6] flex items-center gap-2">
+            <BookOpen size={18} className="text-[#8c8c8c]" />
+            {title}
+          </div>
+          <WindowControls onReset={onReset} onExitFS={onExitFS} onEnterFS={onEnterFS} />
+        </div>
+        <div className="flex-1 flex flex-col relative bg-[#262421]">
+          {children}
+        </div>
+      </div>
+    );
+
+    interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+      variant?: "primary" | "secondary" | "danger" | "ghost";
+      icon?: React.ElementType;
+    }
+
+    const Button = ({ onClick, children, variant = "primary", className = "", disabled = false, icon: Icon, ...props }: ButtonProps) => {
+      const baseStyle = "px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-sm";
+      
+      const variants = {
+        primary: "bg-[#629924] text-white hover:bg-[#72a332] shadow-[0_2px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none",
+        secondary: "bg-[#383634] text-[#dbd9d6] hover:bg-[#454341] shadow-[0_2px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none",
+        danger: "bg-[#cc3333] text-white hover:bg-[#d64040] shadow-[0_2px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none",
+        ghost: "bg-transparent text-[#8c8c8c] hover:bg-[#383634] hover:text-[#dbd9d6]"
+      };
+
+      return (
+        <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`} {...props}>
+          {Icon && <Icon size={16} />}
+          {children}
+        </button>
+      );
+    };
+
+    // --- Main App ---
+
+    function App() {
+      const [gameState, setGameState] = useState<'start' | 'editor' | 'playing' | 'result'>('start'); 
+      const [questions, setQuestions] = useState<QuestionData[]>(DEFAULT_DATA);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [score, setScore] = useState(0);
+      const [showFeedback, setShowFeedback] = useState(false);
+      const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
+      const [shuffledChoices, setShuffledChoices] = useState<Choice[]>([]);
+      
+      const [jsonInput, setJsonInput] = useState(JSON.stringify(DEFAULT_DATA, null, 2));
+      const [jsonError, setJsonError] = useState<string | null>(null);
+      const fileInputRef = useRef<HTMLInputElement>(null);
+
+      const currentQuestion = questions[currentIndex];
+
+      useEffect(() => {
+        if (currentQuestion) {
+          const choices = [
+            { text: currentQuestion.meaning, isCorrect: true },
+            { text: currentQuestion.wrong, isCorrect: false }
+          ];
+          setShuffledChoices(choices.sort(() => Math.random() - 0.5));
+        }
+      }, [currentQuestion, currentIndex]);
+
+      const handleAnswer = (isCorrect: boolean) => {
+        setLastAnswerCorrect(isCorrect);
+        if (isCorrect) setScore(s => s + 1);
+        setShowFeedback(true);
+      };
+
+      const nextQuestion = () => {
+        setShowFeedback(false);
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(i => i + 1);
+        } else {
+          setGameState('result');
+        }
+      };
+
+      const restartGame = () => {
+        setScore(0);
+        setCurrentIndex(0);
+        setShowFeedback(false);
+        setGameState('start');
+      };
+
+      const handlePasteFromClipboard = async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          setJsonInput(text);
+          setJsonError(null); 
+        } catch (err) {
+          setJsonError("Clipboard access denied. Please paste manually.");
+        }
+      };
+
+      const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          try {
+            JSON.parse(content); 
+            setJsonInput(content);
+            setJsonError(null);
+          } catch (error: any) {
+            setJsonError("Invalid JSON file: " + error.message);
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      };
+
+      const triggerFileUpload = () => {
+        fileInputRef.current?.click();
+      };
+
+      const handleImportAndRun = () => {
+        try {
+          const parsed = JSON.parse(jsonInput);
+          if (!Array.isArray(parsed)) throw new Error("Format Error: Data must be a JSON Array [...]");
+          if (parsed.length === 0) throw new Error("Data Error: The array is empty.");
+          if (!parsed[0].word || !parsed[0].meaning) throw new Error("Structure Error: Missing 'word' or 'meaning' fields.");
+          
+          setQuestions(parsed);
+          setJsonError(null);
+          restartGame(); 
+          setGameState('playing'); 
+        } catch (e: any) {
+          setJsonError(e.message);
+        }
+      };
+
+      const handleFullScreenEnter = () => {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(err => console.log(err));
+        }
+      };
+
+      const handleFullScreenExit = () => {
+        if (document.exitFullscreen && document.fullscreenElement) {
+          document.exitFullscreen().catch(err => console.log(err));
+        }
+      };
+
+      const handleAppReset = () => {
+        restartGame();
+      };
+
+      const BaseWrapper = ({ children, title, className }: { children: React.ReactNode, title?: string, className?: string }) => (
+        <AppContainer 
+          title={title} 
+          className={className}
+          onReset={handleAppReset}
+          onEnterFS={handleFullScreenEnter}
+          onExitFS={handleFullScreenExit}
+        >
+          {children}
+        </AppContainer>
+      );
+
+      // --- Views ---
+
+      if (gameState === 'start') {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <BaseWrapper className="h-[450px]">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
+                <div className="text-center space-y-2">
+                  <h1 className="text-4xl font-bold tracking-wider text-[#dbd9d6]">VOCABULARY</h1>
+                  <p className="text-[#8c8c8c] text-sm">{questions.length} words loaded in database</p>
+                </div>
+
+                <div className="w-full max-w-sm space-y-4 pt-8">
+                  <Button onClick={() => setGameState('playing')} className="w-full py-4 text-lg" icon={Play}>
+                    Play
+                  </Button>
+                  <Button variant="secondary" onClick={() => setGameState('editor')} className="w-full py-3" icon={Settings}>
+                    Import JSON
+                  </Button>
+                </div>
+              </div>
+            </BaseWrapper>
+          </div>
+        );
+      }
+
+      if (gameState === 'editor') {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <BaseWrapper title="Import Data" className="h-[600px]">
+              <div className="flex flex-col h-full">
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  ref={fileInputRef} 
+                  onChange={handleFileSelect} 
+                  className="hidden" 
+                />
+
+                <div className="bg-[#1b1a19] border-b border-[#383634] p-2 flex justify-between items-center">
+                   <div className="flex gap-2">
+                     <Button variant="ghost" onClick={triggerFileUpload} className="h-8 text-xs" icon={UploadCloud}>
+                       Load File
+                     </Button>
+                     <Button variant="ghost" onClick={handlePasteFromClipboard} className="h-8 text-xs" icon={Clipboard}>
+                       Paste
+                     </Button>
+                   </div>
+                   <Button variant="ghost" onClick={() => setGameState('start')} className="h-8 text-xs">Cancel</Button>
+                </div>
+                
+                <div className="flex-1 relative">
+                  <textarea
+                    className="w-full h-full p-4 font-mono text-sm bg-[#161512] text-[#85A94E] resize-none focus:outline-none placeholder:text-[#383634]"
+                    value={jsonInput}
+                    onChange={(e) => setJsonInput(e.target.value)}
+                    spellCheck={false}
+                    placeholder="Paste JSON..."
+                  />
+                </div>
+
+                <div className="bg-[#1b1a19] p-4 border-t border-[#383634] flex justify-between items-center">
+                  <div className="flex-1 pr-4">
+                    {jsonError ? (
+                      <span className="text-[#cc3333] text-sm font-bold flex items-center gap-2">
+                        <X size={16} /> {jsonError}
+                      </span>
+                    ) : (
+                      <span className="text-[#8c8c8c] text-sm font-bold flex items-center gap-2">
+                        <FileJson size={16} /> JSON Valid
+                      </span>
+                    )}
+                  </div>
+                  <Button onClick={handleImportAndRun} icon={Play}>
+                    Import & Play
+                  </Button>
+                </div>
+              </div>
+            </BaseWrapper>
+          </div>
+        );
+      }
+
+      if (gameState === 'result') {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <BaseWrapper title="Session Complete" className="h-[450px]">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8 text-center">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-[#8c8c8c] uppercase tracking-widest">Accuracy</h2>
+                  <div className="text-6xl font-bold text-[#dbd9d6]">
+                    {Math.round((score / questions.length) * 100)}%
+                  </div>
+                </div>
+
+                <div className="bg-[#1b1a19] border border-[#383634] px-8 py-4 rounded-sm">
+                  <p className="text-lg text-[#dbd9d6]">
+                    <span className="text-[#629924] font-bold">{score}</span> correct out of <span className="font-bold">{questions.length}</span>
+                  </p>
+                </div>
+
+                <div className="pt-8 w-full max-w-xs">
+                  <Button onClick={restartGame} className="w-full py-4" icon={RefreshCw}>
+                    New Game
+                  </Button>
+                </div>
+              </div>
+            </BaseWrapper>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <BaseWrapper title={`Question ${currentIndex + 1} / ${questions.length}`} className="h-[550px]">
             
-            <div className="flex-1 relative group">
-              <textarea
-                className="w-full h-full p-6 font-mono text-sm bg-white/50 resize-none focus:outline-none text-gray-800 leading-relaxed placeholder:text-gray-400"
-                value={jsonInput}
-                onChange={(e) => setJsonInput(e.target.value)}
-                spellCheck={false}
-                placeholder={`Paste your JSON here or click "Load File..."\n\nExample:\n[\n  {\n    "word": "example",\n    "meaning": "例",\n    "wrong": "例外",\n    "context": "This is an example.",\n    "source": "Dictionary"\n  }\n]`}
+            {/* Progress Bar */}
+            <div className="h-1 w-full bg-[#1b1a19]">
+              <div 
+                className="h-full bg-[#1b78d0] transition-all duration-300"
+                style={{ width: `${((currentIndex) / questions.length) * 100}%` }}
               />
             </div>
 
-            <div className="bg-white/80 backdrop-blur-md p-4 border-t border-gray-200 flex justify-between items-center">
-              <div className="flex-1 pr-4">
-                {jsonError ? (
-                  <span className="text-red-500 text-xs font-semibold flex items-center gap-1 animate-pulse">
-                    <X size={12} /> {jsonError}
-                  </span>
+            <div className="flex-1 flex flex-col">
+              {/* Question Area */}
+              <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+                <div className="absolute top-4 right-6 text-xs font-bold text-[#8c8c8c] uppercase">
+                  {currentQuestion.source}
+                </div>
+                
+                <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight text-center">
+                  {currentQuestion.word}
+                </h2>
+              </div>
+
+              {/* Choices / Feedback Area */}
+              <div className="h-64 bg-[#1b1a19] border-t border-[#383634] relative">
+                {!showFeedback ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 h-full">
+                    {shuffledChoices.map((choice, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleAnswer(choice.isCorrect)}
+                        className="bg-[#262421] border border-[#383634] hover:bg-[#383634] hover:border-[#8c8c8c] text-xl font-bold text-[#dbd9d6] rounded-sm transition-colors active:bg-[#454341] flex items-center justify-center"
+                      >
+                        {choice.text}
+                      </button>
+                    ))}
+                  </div>
                 ) : (
-                  <span className="text-gray-400 text-xs font-medium flex items-center gap-1">
-                    <FileJson size={12} /> Ready to import
-                  </span>
+                  <div className="absolute inset-0 flex flex-col p-6 animate-in fade-in duration-200">
+                    <div className="flex-1 flex flex-col justify-center items-center text-center space-y-4">
+                      <div className={`text-2xl font-bold flex items-center gap-2 ${lastAnswerCorrect ? 'text-[#629924]' : 'text-[#cc3333]'}`}>
+                        {lastAnswerCorrect ? <Check size={32} /> : <X size={32} />}
+                        {lastAnswerCorrect ? 'Correct' : 'Inaccuracy'}
+                      </div>
+                      
+                      <div className="text-xl">
+                        <span className="text-[#8c8c8c]">Meaning: </span>
+                        <span className="text-white font-bold">{currentQuestion.meaning}</span>
+                      </div>
+
+                      {currentQuestion.context && (
+                        <div className="text-[#dbd9d6] italic max-w-lg mt-4 px-4 border-l-4 border-[#383634]">
+                          {currentQuestion.context}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-auto">
+                      <Button onClick={nextQuestion} className="w-full py-4 text-lg">
+                        Next
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
-              <Button onClick={handleImportAndRun} icon={Play}>
-                Import & Run
-              </Button>
             </div>
-          </div>
-        </WindowWrapper>
-      </div>
-    );
-  }
-
-  if (gameState === 'result') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#E0EAFC] to-[#CFDEF3] font-sans">
-        <WindowWrapper title="Summary" className="w-full max-w-md h-[450px]">
-          <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8">
-            <h2 className="text-xl font-semibold text-gray-800">Session Completed</h2>
-            
-            <div className="relative">
-              <svg className="w-32 h-32 transform -rotate-90">
-                <circle cx="64" cy="64" r="60" stroke="#F3F4F6" strokeWidth="8" fill="none" />
-                <circle 
-                  cx="64" cy="64" r="60" 
-                  stroke="#34C759" 
-                  strokeWidth="8" 
-                  fill="none" 
-                  strokeDasharray={2 * Math.PI * 60}
-                  strokeDashoffset={2 * Math.PI * 60 * (1 - score / questions.length)}
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                 <span className="text-3xl font-bold text-gray-900">{Math.round((score / questions.length) * 100)}%</span>
-              </div>
-            </div>
-
-            <p className="text-gray-500 font-medium">{score} correct out of {questions.length}</p>
-
-            <Button onClick={restartGame} variant="secondary" className="w-full" icon={RefreshCw}>
-              Restart
-            </Button>
-          </div>
-        </WindowWrapper>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#E0EAFC] to-[#CFDEF3] font-sans">
-      <WindowWrapper title="Quiz Session" className="w-full max-w-2xl h-[500px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)]">
-        
-        <div className="h-1 w-full bg-gray-100">
-          <div 
-            className="h-full bg-[#007AFF] transition-all duration-500 ease-out rounded-r-full"
-            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-          />
+          </BaseWrapper>
         </div>
+      );
+    }
 
-        <div className="flex-1 flex relative">
-          
-          <div className="flex-1 flex flex-col p-8 md:p-12 items-center justify-center relative transition-all duration-300">
-            
-            <div className="absolute top-6 right-8 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-               {currentQuestion.source}
-            </div>
-
-            <div className="text-center space-y-8 w-full max-w-lg z-0">
-               <h2 className="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight drop-shadow-sm">
-                 {currentQuestion.word}
-               </h2>
-               
-               <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 pt-8 transition-opacity duration-300 ${showFeedback ? 'opacity-20 pointer-events-none blur-[2px]' : 'opacity-100'}`}>
-                 {shuffledChoices.map((choice, idx) => (
-                   <button
-                     key={idx}
-                     onClick={() => handleAnswer(choice.isCorrect)}
-                     className="group h-24 rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-[#007AFF]/30 hover:bg-blue-50/50 transition-all active:scale-[0.98] flex items-center justify-center p-4"
-                   >
-                     <span className="text-lg font-medium text-gray-700 group-hover:text-[#007AFF]">
-                       {choice.text}
-                     </span>
-                   </button>
-                 ))}
-               </div>
-            </div>
-          </div>
-
-          {showFeedback && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center p-8 bg-white/20 backdrop-blur-md animate-in fade-in duration-200">
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 p-8 w-full max-w-md transform transition-all animate-in zoom-in-95 duration-200">
-                
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${lastAnswerCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                     {lastAnswerCorrect ? <Check size={20} strokeWidth={3} /> : <X size={20} strokeWidth={3} />}
-                   </div>
-                   <div>
-                     <p className={`text-lg font-bold ${lastAnswerCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                       {lastAnswerCorrect ? 'Correct' : 'Incorrect'}
-                     </p>
-                     <p className="text-sm text-gray-500">Meaning: <span className="text-gray-900 font-semibold">{currentQuestion.meaning}</span></p>
-                   </div>
-                </div>
-
-                <div className="space-y-6">
-                  {currentQuestion.context && (
-                    <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">Context</p>
-                      <p className="text-lg font-serif italic text-gray-800 leading-relaxed">
-                        "{currentQuestion.context}"
-                      </p>
-                    </div>
-                  )}
-
-                  <Button onClick={nextQuestion} className="w-full h-12 text-base shadow-md">
-                    Next Question <ArrowRight size={18} />
-                  </Button>
-                </div>
-
-              </div>
-            </div>
-          )}
-
-        </div>
-      </WindowWrapper>
-    </div>
-  );
-}
+    const root = createRoot(document.getElementById('root')!);
+    root.render(<App />);
+  </script>
+</body>
+</html>
