@@ -3,57 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Thread Parser (Lichess Dark)</title>
+    <title>Universal Thread Parser (TypeScript/React)</title>
     
     <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel for JSX -->
+    <!-- Babel (with TypeScript support) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Babel Custom Preset for TSX -->
+    <script>
+        Babel.registerPreset('tsx', {
+            presets: [
+                [Babel.availablePresets['typescript'], { isTSX: true, allExtensions: true }],
+                Babel.availablePresets['react']
+            ]
+        });
+    </script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <style>
-        body {
-            background-color: #161512;
-            color: #bababa;
-        }
-        /* Custom Scrollbar for Lichess feel */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #262421; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #404040; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #505050; 
-        }
-        /* Toggle Switch Styles */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #3692e7;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #3692e7;
-        }
-    </style>
 </head>
 <body>
 
 <div id="root"></div>
 
-<script type="text/babel">
-    const { useState, useEffect } = React;
+<script type="text/babel" data-presets="tsx">
+    const { useState } = React;
 
-    // --- Icons (Inline SVG to ensure single-file portability) ---
-    const Icon = ({ path, size = 16, className = "" }) => (
+    // --- Types ---
+    interface IconProps {
+        path: React.ReactNode;
+        size?: number;
+        className?: string;
+    }
+
+    interface Post {
+        number: string;
+        name: string;
+        date: string;
+        uid: string;
+        message: string;
+    }
+
+    interface ParseResult {
+        posts: Post[];
+        title: string;
+    }
+
+    interface ThreadMeta {
+        server: string;
+        board: string;
+        thread: string;
+        domain: string;
+        original: string;
+        htmlUrl: string;
+        datUrl: string;
+    }
+
+    interface Settings {
+        autoAnchor: boolean;
+        expandImages: boolean;
+        exportJson: boolean;
+    }
+
+    interface ToggleProps {
+        active: boolean;
+        onToggle: () => void;
+    }
+
+    // --- Global Styles ---
+    const GlobalStyle: React.FC = () => (
+        <style>{`
+            body {
+                background-color: #161512;
+                color: #bababa;
+                margin: 0;
+                font-family: sans-serif;
+            }
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #262421; 
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #404040; 
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #505050; 
+            }
+        `}</style>
+    );
+
+    // --- Icons ---
+    const Icon: React.FC<IconProps> = ({ path, size = 16, className = "" }) => (
         <svg 
             xmlns="http://www.w3.org/2000/svg" 
             width={size} 
@@ -71,36 +118,36 @@
     );
 
     const Icons = {
-        Globe: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />, 
-        GlobeReal: <><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
-        Settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></>,
-        AlertCircle: <><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></>,
-        RefreshCw: <><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></>,
-        Terminal: <><polyline points="4 17 10 11 4 5" /><line x1="12" x2="20" y1="19" y2="19" /></>,
-        Download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></>,
+        GlobeReal: <g><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></g>,
+        Settings: <g><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></g>,
+        AlertCircle: <g><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></g>,
+        RefreshCw: <g><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></g>,
+        Terminal: <g><polyline points="4 17 10 11 4 5" /><line x1="12" x2="20" y1="19" y2="19" /></g>,
+        Download: <g><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></g>,
         Check: <polyline points="20 6 9 17 4 12" />,
-        Copy: <><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></>,
-        FileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></>,
+        Copy: <g><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></g>,
+        FileText: <g><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></g>,
         Link: <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />,
-        Image: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></>
+        Image: <g><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></g>,
+        Code: <g><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></g>
     };
 
-    const App = () => {
-        const [url, setUrl] = useState('');
-        const [markdown, setMarkdown] = useState('');
-        const [loading, setLoading] = useState(false);
-        const [error, setError] = useState('');
-        const [parsedMeta, setParsedMeta] = useState(null);
-        const [copySuccess, setCopySuccess] = useState(false);
-        const [statusMsg, setStatusMsg] = useState('');
+    // --- Main Application ---
+    const App: React.FC = () => {
+        const [url, setUrl] = useState<string>('');
+        const [outputData, setOutputData] = useState<string>('');
+        const [loading, setLoading] = useState<boolean>(false);
+        const [error, setError] = useState<string>('');
+        const [parsedMeta, setParsedMeta] = useState<ThreadMeta | null>(null);
+        const [copySuccess, setCopySuccess] = useState<boolean>(false);
+        const [statusMsg, setStatusMsg] = useState<string>('');
         
-        // New Settings State
-        const [settings, setSettings] = useState({
+        const [settings, setSettings] = useState<Settings>({
             autoAnchor: true,
-            expandImages: true
+            expandImages: true,
+            exportJson: false
         });
 
-        // Lichess Dark Mode Styles
         const styles = {
             container: "min-h-screen bg-[#161512] text-[#bababa] font-sans selection:bg-[#3692e7] selection:text-white",
             header: "bg-[#262421] border-b border-[#302e2c] px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-md",
@@ -124,11 +171,11 @@
             toggleText: "text-xs font-medium text-[#a0a0a0]"
         };
 
-        const toggleSetting = (key) => {
+        const toggleSetting = (key: keyof Settings) => {
             setSettings(prev => ({ ...prev, [key]: !prev[key] }));
         };
 
-        const Toggle = ({ active, onToggle }) => (
+        const Toggle: React.FC<ToggleProps> = ({ active, onToggle }) => (
             <div 
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer ${active ? 'bg-[#3692e7]' : 'bg-[#404040]'}`}
                 onClick={onToggle}
@@ -137,8 +184,7 @@
             </div>
         );
 
-        // --- Parser Logic ---
-        const parseUrl = (inputUrl) => {
+        const parseUrl = (inputUrl: string): ThreadMeta | null => {
             try {
                 const urlObj = new URL(inputUrl);
                 const pathParts = urlObj.pathname.split('/').filter(p => p);
@@ -178,12 +224,12 @@
             }
         };
 
-        const fetchWithProxy = async (targetUrl) => {
+        const fetchWithProxy = async (targetUrl: string): Promise<ArrayBuffer> => {
             const proxies = [
-                (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-                (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+                (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+                (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
             ];
-            let lastError = null;
+            let lastError: unknown = null;
             for (const proxyGen of proxies) {
                 try {
                     const response = await fetch(proxyGen(targetUrl));
@@ -199,7 +245,7 @@
             throw lastError || new Error('All proxies failed');
         };
 
-        const decodeBuffer = (buffer) => {
+        const decodeBuffer = (buffer: ArrayBuffer): string => {
             const decoderSJIS = new TextDecoder('shift-jis');
             const textSJIS = decoderSJIS.decode(buffer);
             const replacementCount = (textSJIS.match(/\uFFFD/g) || []).length;
@@ -212,10 +258,9 @@
             return textSJIS;
         };
 
-        // --- Parsing Functions ---
-        const parseDat = (text, threadTitle) => {
+        const parseDat = (text: string, threadTitle: string): ParseResult => {
             const lines = text.split('\n');
-            const posts = [];
+            const posts: Post[] = [];
             let title = threadTitle;
             lines.forEach((line, index) => {
                 if (!line.trim()) return;
@@ -247,10 +292,10 @@
             return { posts, title };
         };
 
-        const parseHtml = (text, defaultTitle) => {
+        const parseHtml = (text: string, defaultTitle: string): ParseResult => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, 'text/html');
-            let posts = [];
+            const posts: Post[] = [];
             const title = doc.title.replace(' - 2ちゃんねる', '').replace('5ちゃんねる掲示板', '').trim() || defaultTitle;
             
             const dl = doc.querySelector('dl.thread') || doc.querySelector('dl');
@@ -259,7 +304,7 @@
                 const dds = dl.querySelectorAll('dd');
                 dts.forEach((dt, i) => {
                     if (dds[i]) {
-                        const dtText = dt.textContent.trim();
+                        const dtText = dt.textContent?.trim() || '';
                         const ddContent = dds[i].innerHTML;
                         const numMatch = dtText.match(/^(\d+)\s*:/);
                         const number = numMatch ? numMatch[1] : (i + 1).toString();
@@ -294,11 +339,11 @@
                         if (message) posts.push({ number, name, date, uid, message });
                     });
                 } else {
-                    const regex = /<dt>(\d+)\s*[：:](.*?)<dd>(.*?)<br><br>/gs;
+                    const regex = /<dt>(\d+)\s*[：:]([\s\S]*?)<dd>([\s\S]*?)<br><br>/g;
                     let match;
                     while ((match = regex.exec(text)) !== null) {
                         const number = match[1];
-                        let meta = match[2];
+                        const meta = match[2];
                         const rawMsg = match[3];
                         let name = "Unknown", date = "";
                         if (meta.includes('：')) {
@@ -316,11 +361,10 @@
             return { posts, title };
         };
 
-        // --- Main Fetch Logic with AI YAML Injection ---
         const fetchThread = async () => {
             setLoading(true);
             setError('');
-            setMarkdown('');
+            setOutputData('');
             setCopySuccess(false);
             setStatusMsg('URL解析中...');
 
@@ -334,7 +378,7 @@
             setParsedMeta(meta);
 
             try {
-                let posts = [];
+                let posts: Post[] = [];
                 let title = meta.thread;
 
                 try {
@@ -359,9 +403,25 @@
 
                 if (posts.length === 0) throw new Error('解析可能なレスが見つかりませんでした。');
 
-                // --- Generate Markdown with AI YAML Header ---
                 const timestamp = new Date().toISOString();
-                const yamlHeader = `---
+
+                if (settings.exportJson) {
+                    const jsonPayload = {
+                        type: "5ch_thread_archive",
+                        parsed_at: timestamp,
+                        source_url: meta.original,
+                        thread_title: title,
+                        posts: posts.map(p => ({
+                            number: p.number,
+                            name: p.name,
+                            date: p.date,
+                            uid: p.uid,
+                            message: p.message
+                        }))
+                    };
+                    setOutputData(JSON.stringify(jsonPayload, null, 2));
+                } else {
+                    const yamlHeader = `---
 type: 5ch_thread_archive
 parsed_at: "${timestamp}"
 source_url: "${meta.original}"
@@ -381,39 +441,36 @@ structure_info:
 
 `;
 
-                let md = yamlHeader + `# ${title}\n\nSource: ${meta.original}\n\n---\n\n`;
-                
-                posts.forEach(p => {
-                    let message = p.message;
+                    let md = yamlHeader + `# ${title}\n\nSource: ${meta.original}\n\n---\n\n`;
                     
-                    // --- ENHANCEMENT: Auto-Anchor Link ---
-                    if (settings.autoAnchor) {
-                        // Replace >>123 with [>>123](#123)
-                        message = message.replace(/>>(\d+)/g, '[>>$1](#$1)');
-                    }
+                    posts.forEach(p => {
+                        let message = p.message;
+                        
+                        if (settings.autoAnchor) {
+                            message = message.replace(/>>(\d+)/g, '[>>$1](#$1)');
+                        }
 
-                    // --- ENHANCEMENT: Auto-Image Expand ---
-                    if (settings.expandImages) {
-                        // Detect http(s) links ending in image extensions
-                        // Use regex that captures URL. Note: 5ch often omits protocol or uses ttp, 
-                        // but cleaner expects http/https. We stick to http/https for safety.
-                        message = message.replace(
-                            /(https?:\/\/[^\s<>]+\.(?:jpg|jpeg|png|gif|webp))/gi, 
-                            '![]($1)'
-                        );
-                    }
+                        if (settings.expandImages) {
+                            message = message.replace(
+                                /(https?:\/\/[^\s<>]+\.(?:jpg|jpeg|png|gif|webp))/gi, 
+                                '![]($1)'
+                            );
+                        }
 
-                    md += `### ${p.number} : ${p.name}\n`;
-                    md += `> ${p.date} ${p.uid}\n\n`;
-                    md += `${message}\n\n`;
-                    md += `---\n\n`;
-                });
+                        md += `### ${p.number} : ${p.name}\n`;
+                        md += `> ${p.date} ${p.uid}\n\n`;
+                        md += `${message}\n\n`;
+                        md += `---\n\n`;
+                    });
 
-                setMarkdown(md);
+                    setOutputData(md);
+                }
+
                 setStatusMsg('完了');
             } catch (err) {
                 console.error(err);
-                setError(`エラー: ${err.message}\n\nヒント: しばらく待って再試行するか、ブラウザで該当URLが開けるか確認してください。`);
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                setError(`エラー: ${errorMessage}\n\nヒント: しばらく待って再試行するか、ブラウザで該当URLが開けるか確認してください。`);
             } finally {
                 setLoading(false);
                 if (!error) setTimeout(() => setStatusMsg(''), 2000);
@@ -421,20 +478,46 @@ structure_info:
         };
 
         const copyToClipboard = () => {
-            navigator.clipboard.writeText(markdown).then(() => {
+            const textArea = document.createElement("textarea");
+            textArea.value = outputData;
+            textArea.style.position = "fixed";
+            textArea.style.top = "0";
+            textArea.style.left = "-9999px"; 
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
                 setCopySuccess(true);
                 setTimeout(() => setCopySuccess(false), 2000);
-            });
+            } catch (err) {
+                console.error('コピーに失敗しました', err);
+            }
+            document.body.removeChild(textArea);
         };
 
-        const downloadMarkdown = () => {
-            if (!markdown) return;
-            let fileName = 'thread.md';
-            const titleMatch = markdown.match(/^# (.*)\n/m); 
-            if (titleMatch && titleMatch[1]) {
-                fileName = titleMatch[1].trim().replace(/[\\/:*?"<>|]/g, '_') + '.md';
+        const downloadData = () => {
+            if (!outputData) return;
+            const isJson = settings.exportJson;
+            const extension = isJson ? '.json' : '.md';
+            const mimeType = isJson ? 'application/json;charset=utf-8' : 'text/markdown;charset=utf-8';
+            let fileName = 'thread' + extension;
+            
+            if (isJson) {
+                try {
+                    const parsed = JSON.parse(outputData);
+                    if (parsed.thread_title) {
+                        fileName = parsed.thread_title.trim().replace(/[\\/:*?"<>|]/g, '_') + extension;
+                    }
+                } catch(e) {}
+            } else {
+                const titleMatch = outputData.match(/^# (.*)\n/m); 
+                if (titleMatch && titleMatch[1]) {
+                    fileName = titleMatch[1].trim().replace(/[\\/:*?"<>|]/g, '_') + extension;
+                }
             }
-            const blob = new Blob(['\uFEFF' + markdown], { type: 'text/markdown;charset=utf-8' });
+
+            const blob = new Blob(['\uFEFF' + outputData], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -447,13 +530,14 @@ structure_info:
 
         return (
             <div className={styles.container}>
+                <GlobalStyle />
                 <header className={styles.header}>
                     <div className={styles.title}>
                         <Icon path={Icons.GlobeReal} size={20} className="text-[#3692e7]" />
                         <span>Universal Thread Parser</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className={styles.badge}>v3.1 Enhanced</span>
+                        <span className={styles.badge}>v3.3 TS (JSON Output)</span>
                     </div>
                 </header>
 
@@ -479,13 +563,12 @@ structure_info:
                                 </p>
                             </div>
 
-                            {/* Settings Toggles */}
                             <div className="bg-[#211f1d] p-3 rounded border border-[#302e2c] space-y-1">
                                 <label className={styles.label}>Formatting Options</label>
                                 <div className={styles.toggleRow}>
                                     <div className="flex items-center gap-2">
                                         <Icon path={Icons.Link} size={14} className="text-[#666]" />
-                                        <span className={styles.toggleText}>Auto-link Anchors (>>1)</span>
+                                        <span className={styles.toggleText}>Auto-link Anchors (&gt;&gt;1)</span>
                                     </div>
                                     <Toggle 
                                         active={settings.autoAnchor} 
@@ -500,6 +583,16 @@ structure_info:
                                     <Toggle 
                                         active={settings.expandImages} 
                                         onToggle={() => toggleSetting('expandImages')} 
+                                    />
+                                </div>
+                                <div className={styles.toggleRow}>
+                                    <div className="flex items-center gap-2">
+                                        <Icon path={Icons.Code} size={14} className="text-[#666]" />
+                                        <span className={styles.toggleText}>Output as JSON</span>
+                                    </div>
+                                    <Toggle 
+                                        active={settings.exportJson} 
+                                        onToggle={() => toggleSetting('exportJson')} 
                                     />
                                 </div>
                             </div>
@@ -553,17 +646,17 @@ structure_info:
                             <span className={styles.cardTitle}>Output</span>
                             <div className="flex gap-2">
                                 <button 
-                                    onClick={downloadMarkdown} 
-                                    disabled={!markdown}
+                                    onClick={downloadData} 
+                                    disabled={!outputData}
                                     className={styles.secondaryButton}
-                                    title="Download .md"
+                                    title={`Download ${settings.exportJson ? '.json' : '.md'}`}
                                 >
                                     <Icon path={Icons.Download} size={14} />
                                     DOWNLOAD
                                 </button>
                                 <button 
                                     onClick={copyToClipboard} 
-                                    disabled={!markdown}
+                                    disabled={!outputData}
                                     className={styles.secondaryButton}
                                     title="Copy"
                                 >
@@ -574,10 +667,10 @@ structure_info:
                         </div>
                         
                         <div className={styles.outputArea}>
-                            {markdown ? (
+                            {outputData ? (
                                 <textarea 
                                     className={styles.codeBlock} 
-                                    value={markdown} 
+                                    value={outputData} 
                                     readOnly 
                                 />
                             ) : (
@@ -593,9 +686,11 @@ structure_info:
         );
     };
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    }
 </script>
-
 </body>
 </html>
