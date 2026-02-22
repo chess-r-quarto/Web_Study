@@ -30,7 +30,6 @@
         ::-webkit-scrollbar-thumb:hover { background: #505050; }
     </style>
     <script>
-        // TypeScript (TSX) 解析用のBabelプリセットを登録
         Babel.registerPreset('tsx', {
             presets: [
                 [Babel.availablePresets['typescript'], { isTSX: true, allExtensions: true }],
@@ -44,7 +43,6 @@
     <script type="text/babel" data-presets="tsx">
         const { useState, useEffect, useRef } = React;
 
-        // グローバル変数の型宣言
         declare const JSZip: any;
         declare const lucide: any;
         declare const mammoth: any;
@@ -55,12 +53,12 @@
         }
 
         interface DocStats {
-            part: number;
-            chapter: number;
-            section: number;
-            article: number;
-            paragraph: number;
-            item: number;
+            parts: number;
+            chapters: number;
+            sections: number;
+            articles: number;
+            paragraphs: number;
+            items: number;
         }
 
         // --- Helper: Encoding Detection & Reading ---
@@ -92,11 +90,9 @@
         // --- Helper: Kanji Number to Arabic Number ---
         const parseKanjiNum = (s: string | null | undefined): number | string => {
             if (!s) return "";
-            // すでにアラビア数字の場合
             if (s.match(/^[0-9０-９]+$/)) {
                 return s.replace(/[０-９]/g, (c: string) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
             }
-            // 漢数字の解析
             const map: Record<string, number> = {'〇':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};
             const unit: Record<string, number> = {'十':10,'百':100,'千':1000};
             let res = 0;
@@ -115,7 +111,7 @@
 
         const extractAndConvertNum = (s: string | null | undefined): string => {
             if (!s) return "";
-            const cleanStr = s.replace(/[第条項号]/g, '').trim();
+            const cleanStr = s.replace(/[第編章節条項号]/g, '').trim();
             return parseKanjiNum(cleanStr).toString();
         };
 
@@ -139,7 +135,7 @@
             }
 
             let mdBody = `# ${lawTitle}\n\n`;
-            const stats: DocStats = { part: 0, chapter: 0, section: 0, article: 0, paragraph: 0, item: 0 };
+            const stats: DocStats = { parts: 0, chapters: 0, sections: 0, articles: 0, paragraphs: 0, items: 0 };
 
             const clean = (t: string | null | undefined): string => t ? normalizeText(t.replace(/\s+/g, ' ')) : '';
             
@@ -159,32 +155,39 @@
 
                 if (name === 'Part') {
                     mdBody += `\n## ${normalizeText(node.querySelector('PartTitle')?.textContent)}\n\n`;
-                    stats.part++;
+                    stats.parts++;
                 } else if (name === 'Chapter') {
                     mdBody += `\n### ${normalizeText(node.querySelector('ChapterTitle')?.textContent)}\n\n`;
-                    stats.chapter++;
+                    stats.chapters++;
                 } else if (name === 'Section') {
                     mdBody += `\n#### ${normalizeText(node.querySelector('SectionTitle')?.textContent)}\n\n`;
-                    stats.section++;
+                    stats.sections++;
                 } else if (name === 'Article') {
                     const titleRaw = normalizeText(node.querySelector('ArticleTitle')?.textContent);
                     const num = extractAndConvertNum(titleRaw);
                     let caption = normalizeText(node.querySelector('ArticleCaption')?.textContent);
-                    if (caption) caption = `(${caption})`;
-                    mdBody += `\n##### 第${num}条 ${caption}\n`;
-                    stats.article++;
+                    if (caption) {
+                        // XMLによる二重括弧(（見出し）)を標準化
+                        caption = caption.replace(/^[\(（](.*?)[\)）]$/, '$1');
+                        caption = `(${caption})`;
+                    } else {
+                        caption = "";
+                    }
+                    const captionStr = caption ? ` ${caption}` : "";
+                    mdBody += `\n##### 第${num}条${captionStr}\n`;
+                    stats.articles++;
                 } else if (name === 'Paragraph') {
                     let numStr = normalizeText(node.querySelector('ParagraphNum')?.textContent);
                     const num = numStr ? extractAndConvertNum(numStr) : getSiblingIndex(node, 'Paragraph').toString();
                     const sentence = node.querySelector('ParagraphSentence > Sentence')?.textContent || '';
                     mdBody += `**第${num}項** ${clean(sentence)}\n\n`;
-                    stats.paragraph++;
+                    stats.paragraphs++;
                 } else if (name === 'Item') {
                     const titleRaw = normalizeText(node.querySelector('ItemTitle')?.textContent);
                     const num = extractAndConvertNum(titleRaw);
                     const sentence = node.querySelector('ItemSentence > Sentence')?.textContent || '';
                     mdBody += `- **第${num}号** ${clean(sentence)}\n`;
-                    stats.item++;
+                    stats.items++;
                 } else if (name === 'Subitem1') {
                     const num = extractAndConvertNum(normalizeText(node.querySelector('Subitem1Title')?.textContent));
                     const sentence = node.querySelector('Subitem1Sentence > Sentence')?.textContent || '';
@@ -193,6 +196,9 @@
                     const num = extractAndConvertNum(normalizeText(node.querySelector('Subitem2Title')?.textContent));
                     const sentence = node.querySelector('Subitem2Sentence > Sentence')?.textContent || '';
                     mdBody += `    - **${num}** ${clean(sentence)}\n`;
+                } else if (name === 'SupplProvision') {
+                    const label = normalizeText(node.querySelector('SupplProvisionLabel')?.textContent);
+                    mdBody += `\n## ${label || '附則'}\n\n`;
                 }
 
                 Array.from(node.children).forEach((child: Element) => {
@@ -200,7 +206,7 @@
                         'PartTitle', 'ChapterTitle', 'SectionTitle', 'ArticleTitle', 
                         'ArticleCaption', 'ParagraphNum', 'ParagraphSentence', 
                         'ItemTitle', 'ItemSentence', 'Subitem1Title', 'Subitem1Sentence', 
-                        'Subitem2Title', 'Subitem2Sentence'
+                        'Subitem2Title', 'Subitem2Sentence', 'SupplProvisionLabel'
                     ];
                     if (!ignoreTags.includes(child.nodeName)) {
                         traverse(child);
@@ -211,17 +217,22 @@
             const mainProvision = xmlDoc.querySelector('MainProvision');
             if (mainProvision) traverse(mainProvision);
 
+            // 附則の処理（レガシーデータに合わせる）
+            const supplProvisions = xmlDoc.querySelectorAll('SupplProvision');
+            supplProvisions.forEach(sp => traverse(sp));
+
             const header = `---
 title: "${lawTitle}"
 law_num: "${lawNum}"
 enact_date: "${enactDate}"
 source_type: "xml_converted"
 structure_summary:
-  parts: ${stats.part}
-  chapters: ${stats.chapter}
-  sections: ${stats.section}
-  articles: ${stats.article}
-  items: ${stats.item}
+  parts: ${stats.parts}
+  chapters: ${stats.chapters}
+  sections: ${stats.sections}
+  articles: ${stats.articles}
+  paragraphs: ${stats.paragraphs}
+  items: ${stats.items}
 ---\n\n`;
 
             return { title: lawTitle, content: header + mdBody };
@@ -234,7 +245,7 @@ structure_summary:
             const title = normalizeText(doc.querySelector('title')?.textContent) || fallbackTitle;
             
             let mdBody = `# ${title}\n\n`;
-            const stats: DocStats = { part: 0, chapter: 0, section: 0, article: 0, paragraph: 0, item: 0 };
+            const stats: DocStats = { parts: 0, chapters: 0, sections: 0, articles: 0, paragraphs: 0, items: 0 };
 
             const container = 
                 doc.querySelector('.joubun') || 
@@ -252,9 +263,54 @@ structure_summary:
                 });
             }
 
+            let lawNum = "";
+            let enactDate = "";
+            
+            // 事前スキャン：法令番号と公布日の抽出
+            for (let i = 0; i < Math.min(lines.length, 25); i++) {
+                const rawText = normalizeText(lines[i].textContent);
+                if (!rawText || rawText === title) continue;
+                
+                const dateMatch = rawText.match(/((?:明治|大正|昭和|平成|令和)[0-9０-９元一二三四五六七八九十百]+年[0-9０-９一二三四五六七八九十]+月[0-9０-９一二三四五六七八九十]+日)/);
+                if (dateMatch && !enactDate) {
+                    enactDate = dateMatch[1];
+                    if (rawText.includes('公布')) enactDate += '公布';
+                }
+                
+                const numMatch = rawText.match(/[^　\s]*第[0-9０-９一二三四五六七八九十百千]+号/);
+                if (numMatch && !lawNum) {
+                    lawNum = numMatch[0];
+                }
+            }
+
+            let isAfterArticleTitle = false;
+
             lines.forEach((el: Element) => {
                 const rawText = normalizeText(el.textContent);
                 if (!rawText) return;
+
+                // --- 0. Part / Chapter / Section ---
+                let structMatch = rawText.match(/^第([0-9０-９一-千]+)編[\s　]*(.*)/);
+                if (structMatch) {
+                    stats.parts++;
+                    mdBody += `\n## 第${parseKanjiNum(structMatch[1])}編 ${structMatch[2]}\n\n`;
+                    isAfterArticleTitle = false;
+                    return;
+                }
+                structMatch = rawText.match(/^第([0-9０-９一-千]+)章[\s　]*(.*)/);
+                if (structMatch) {
+                    stats.chapters++;
+                    mdBody += `\n### 第${parseKanjiNum(structMatch[1])}章 ${structMatch[2]}\n\n`;
+                    isAfterArticleTitle = false;
+                    return;
+                }
+                structMatch = rawText.match(/^第([0-9０-９一-千]+)節[\s　]*(.*)/);
+                if (structMatch) {
+                    stats.sections++;
+                    mdBody += `\n#### 第${parseKanjiNum(structMatch[1])}節 ${structMatch[2]}\n\n`;
+                    isAfterArticleTitle = false;
+                    return;
+                }
 
                 // --- 1. Article (条) ---
                 let match = rawText.match(/^[\(（](.+?)[\)）]\s*第([0-9０-９一-千]+)条[\s　]*(.*)/) || 
@@ -266,8 +322,13 @@ structure_summary:
                     const caption = isLegacyCaptionFirst ? `(${match[1]})` : `(${match[2]})`;
                     const content = match[3];
                     mdBody += `\n##### 第${num}条 ${caption}\n`;
-                    if (content) mdBody += `${content}\n`; 
-                    stats.article++;
+                    stats.articles++;
+                    isAfterArticleTitle = true;
+                    if (content) {
+                        mdBody += `**第1項** ${content}\n\n`; 
+                        stats.paragraphs++;
+                        isAfterArticleTitle = false;
+                    }
                     return;
                 }
 
@@ -276,62 +337,88 @@ structure_summary:
                     const num = parseKanjiNum(match[1]);
                     const content = match[2];
                     mdBody += `\n##### 第${num}条\n`; 
-                    if (content) mdBody += `${content}\n`;
-                    stats.article++;
+                    stats.articles++;
+                    isAfterArticleTitle = true;
+                    if (content) {
+                        mdBody += `**第1項** ${content}\n\n`;
+                        stats.paragraphs++;
+                        isAfterArticleTitle = false;
+                    }
                     return;
                 }
                 
                 // --- 2. Paragraph (項) ---
-                if (rawText.match(/^[0-9]+[\s　]/)) {
-                    const parts = rawText.split(/[\s　]/);
-                    const num = parts[0];
-                    const body = rawText.substring(num.length).trim();
-                    if (!body.startsWith('年')) {
-                        mdBody += `\n**第${num}項** ${body}\n`;
-                        stats.paragraph++;
+                if (rawText.match(/^[0-9０-９]+[\s　]/)) {
+                    const numStr = rawText.match(/^[0-9０-９]+/)?.[0] || "2";
+                    const num = parseKanjiNum(numStr);
+                    const body = rawText.substring(numStr.length).trim();
+                    if (!body.startsWith('年') && !body.startsWith('月') && !body.startsWith('日')) {
+                        mdBody += `**第${num}項** ${body}\n\n`;
+                        stats.paragraphs++;
+                        isAfterArticleTitle = false;
                         return;
                     }
                 }
 
                 // --- 3. Item (号) ---
-                // 括弧書きの号数（例：(1), (一)）
                 let itemMatch = rawText.match(/^[\(（]([0-9０-９一-千]+)[\)）][\s　]*(.*)/);
                 if (itemMatch) {
                      const num = extractAndConvertNum(itemMatch[1]);
                      mdBody += `- **第${num}号** ${itemMatch[2] || rawText.substring(itemMatch[0].length).trim()}\n`;
-                     stats.item++;
+                     stats.items++;
+                     isAfterArticleTitle = false;
                      return;
                 }
 
-                // 明示的な第N号
                 itemMatch = rawText.match(/^第([0-9０-９一-千]+)号[\s　]*(.*)/);
                 if (itemMatch) {
                      const num = extractAndConvertNum(itemMatch[1]);
                      const content = itemMatch[2];
                      mdBody += `- **第${num}号** ${content}\n`;
-                     stats.item++;
+                     stats.items++;
+                     isAfterArticleTitle = false;
                      return;
                 }
                 
-                // ア・イ・ウ（号の細分）
                 if (rawText.match(/^[ア-ン][\s　]/)) {
-                     mdBody += `- ${rawText}\n`;
+                     mdBody += `  - ${rawText}\n`;
+                     isAfterArticleTitle = false;
                      return;
                 }
 
                 // --- 4. Fallback ---
-                if (rawText !== title) {
-                    mdBody += `${rawText}\n`;
+                if (rawText !== title && rawText !== lawNum && !rawText.includes(enactDate)) {
+                    if (isAfterArticleTitle) {
+                        // 条文見出しの直後に配置されたテキストを第1項として処理
+                        mdBody += `**第1項** ${rawText}\n\n`;
+                        stats.paragraphs++;
+                        isAfterArticleTitle = false;
+                    } else {
+                        // 改正履歴や附則をマークダウンの装飾要素に変換
+                        if (rawText.match(/^[\(（]一部改正/)) {
+                            mdBody += `\n*${rawText}*\n\n`;
+                        } else if (rawText.match(/^附[\s　]*則/)) {
+                            mdBody += `\n## ${rawText}\n\n`;
+                        } else {
+                            mdBody += `${rawText}\n`;
+                        }
+                    }
                 }
             });
 
             const header = `---
 title: "${title}"
+law_num: "${lawNum || 'Unknown'}"
+enact_date: "${enactDate || 'Unknown'}"
 source_type: "legacy_html_converted"
-description: "Converted from Reiki-Base/MHTML/HTML format"
+description: "Converted from Reiki-Base/MHTML/HTML/DOCX format"
 structure_summary:
-  articles: ${stats.article}
-  items: ${stats.item}
+  parts: ${stats.parts}
+  chapters: ${stats.chapters}
+  sections: ${stats.sections}
+  articles: ${stats.articles}
+  paragraphs: ${stats.paragraphs}
+  items: ${stats.items}
 ---\n\n`;
 
             return { title, content: header + mdBody };
@@ -484,13 +571,11 @@ structure_summary:
                 <div className="min-h-screen flex flex-col items-center justify-center p-6">
                     <div className="w-full max-w-lg">
                         
-                        {/* Header */}
                         <header className="flex items-center space-x-3 mb-6 select-none opacity-90">
                             <i data-lucide="cpu" className="w-6 h-6 text-accent"></i>
                             <h1 className="text-xl font-light tracking-wide text-[#bababa]">Legal <span className="text-accent font-normal">Compiler</span></h1>
                         </header>
 
-                        {/* Main Interaction Area */}
                         {!downloadUrl ? (
                             <div 
                                 className={`lichess-card p-12 text-center border-2 border-dashed transition-all duration-200 cursor-pointer 
@@ -527,7 +612,6 @@ structure_summary:
                                 )}
                             </div>
                         ) : (
-                            // Download View
                             <div className="lichess-card p-8 text-center border border-[#303030] animate-fade-in">
                                 <div className="mb-6 flex justify-center">
                                     <div className="w-16 h-16 rounded-full bg-[#2b3036] flex items-center justify-center border border-[#3692e7]">
@@ -556,7 +640,6 @@ structure_summary:
                             </div>
                         )}
 
-                        {/* System Log */}
                         <div className="mt-4 lichess-card p-3 font-mono text-[11px] text-[#606060] terminal-font h-32 overflow-hidden border border-[#303030]">
                             <div className="flex items-center space-x-2 mb-2 border-b border-[#303030] pb-1">
                                 <div className="w-2 h-2 rounded-full bg-[#505050]"></div>
@@ -574,10 +657,9 @@ structure_summary:
                             </div>
                         </div>
 
-                        {/* Footer Info */}
                         <div className="mt-4 flex justify-between items-center text-[10px] text-[#404040] font-mono">
                             <span>TARGET: NOTEBOOKLM / MD</span>
-                            <span>BUILD: STABLE + LEGACY (HTML)</span>
+                            <span>BUILD: STABLE + LEGACY (HTML/DOCX)</span>
                         </div>
 
                     </div>
