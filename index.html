@@ -4,251 +4,173 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Portal</title>
-    <style>
-        :root {
-            --bg-color: #F6F6F6;
-            --container-bg: #FFFFFF;
-            --text-main: #1D1D1F;
-            --text-sub: #86868B;
-            --accent-blue: #007AFF;
-            --item-hover: #F2F2F7;
-            --border-color: #E5E5E5;
-            --system-radius: 12px;
-        }
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
+    <script>
+        // Babel Configuration for TSX
+        Babel.registerPreset('tsx', {
+            presets: [
+                [Babel.availablePresets['typescript'], { isTSX: true, allExtensions: true }],
+                Babel.availablePresets['react']
+            ]
+        });
+    </script>
+    
+    <style>
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Noto Sans JP", sans-serif;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
-
-        .window {
-            width: 95%;
-            max-width: 900px;
-            background: var(--container-bg);
-            border-radius: var(--system-radius);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--border-color);
-            height: 90vh;
-        }
-
-        .title-bar {
-            height: 52px;
-            background: var(--container-bg);
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            border-bottom: 1px solid var(--border-color);
-            flex-shrink: 0;
-        }
-
-        .traffic-lights {
-            display: flex;
-            gap: 8px;
-            width: 60px;
-        }
-
-        .light {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-        .red { background: #FF5F57; }
-        .yellow { background: #FEBC2E; }
-        .green { background: #28C840; }
-
-        .title-text {
-            flex: 1;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-sub);
-            margin-right: 60px;
-        }
-
-        .content {
-            padding: 24px 32px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-
-        .category-section {
-            margin-bottom: 32px;
-        }
-
-        .category-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-sub);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 12px;
-            padding-left: 4px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-        }
-
-        .module-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: var(--container-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            text-decoration: none;
-            color: var(--text-main);
-            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
-        }
-
-        .module-item:hover {
-            background: var(--item-hover);
-            border-color: var(--accent-blue);
-            transform: translateY(-1px);
-        }
-
-        .icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            margin-right: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-
-        .module-info {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .module-name {
-            font-size: 13px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .module-desc {
-            font-size: 10px;
-            color: var(--text-sub);
-        }
-
-        .bg-blue { background: #007AFF; }
-        .bg-orange { background: #FF9500; }
-        .bg-green { background: #34C759; }
-        .bg-purple { background: #AF52DE; }
-        .bg-pink { background: #FF2D55; }
-        .bg-gray { background: #8E8E93; }
-        .bg-cyan { background: #5AC8FA; }
-        .bg-indigo { background: #5856D6; }
-
-        .content::-webkit-scrollbar { width: 8px; }
-        .content::-webkit-scrollbar-track { background: transparent; }
-        .content::-webkit-scrollbar-thumb {
-            background: #D1D1D6;
+        
+        /* Custom Scrollbar for Dark Mode */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: #4B5563; /* tailwind gray-600 */
             border-radius: 4px;
         }
+        ::-webkit-scrollbar-thumb:hover { background: #6B7280; } /* tailwind gray-500 */
     </style>
 </head>
-<body>
+<body class="bg-[#1C1C1E] text-gray-100 min-h-screen flex items-center justify-center m-0 p-4">
+    <div id="root" class="w-full max-w-4xl h-[90vh]"></div>
 
-<div class="window">
-    <div class="title-bar">
-        <div class="traffic-lights">
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
-        </div>
-        <div class="title-text">Study Modules Portal</div>
-    </div>
-    
-    <div class="content" id="portal-root"></div>
-</div>
+    <script type="text/babel" data-presets="tsx">
+        const { useState, useEffect } = React;
 
-<script>
-    const APP_DATA = [
-        {
-            category: "Development & Utilities",
-            items: [
-                { name: "HTML to MD", file: "html_to_md.html", icon: "📝", color: "bg-blue" },
-                { name: "JSON Downloader", file: "json_downloader.html", icon: "📥", color: "bg-cyan" },
-                { name: "Thread Scraper", file: "thread_scraper.html", icon: "🕸️", color: "bg-indigo" },
-                { name: "Legal Compiler", file: "legal_compiler.html", icon: "⚖️", color: "bg-gray" },
-                { name: "Legal Compiler TS", file: "legal_compiler_ts.html", icon: "⚖️", color: "bg-purple" }
-            ]
-        },
-        {
-            category: "Finance & Taxation",
-            items: [
-                { name: "Divided Calc", file: "Devided_Calc.html", icon: "➗", color: "bg-orange" },
-                { name: "Corporate Tax", file: "Corporate_tax_master.html", icon: "🏢", color: "bg-pink" },
-                { name: "Data Mgmt", file: "Data_Management.html", icon: "🗄️", color: "bg-gray" }
-            ]
-        },
-        {
-            category: "Financial Planning (FP1)",
-            items: [
-                { name: "FP1 FAR", file: "FP1_FAR.html", icon: "⚖️", color: "bg-blue" },
-                { name: "FP1 Pension", file: "FP1_Pension.html", icon: "👴", color: "bg-green" },
-                { name: "FP1 Portfolio", file: "FP1_Portfolio.html", icon: "💼", color: "bg-purple" },
-                { name: "FP1 Asset Value", file: "FP1_asset_value.html", icon: "💎", color: "bg-green" },
-                { name: "FP1 Sell Buy", file: "FP1_sell_buy.html", icon: "📈", color: "bg-orange" },
-                { name: "FP1 Inheritance", file: "FP1_souzoku.html", icon: "📜", color: "bg-pink" }
-            ]
-        },
-        {
-            category: "Language",
-            items: [
-                { name: "English Word", file: "English_Word.html", icon: "A", color: "bg-orange" }
-            ]
+        // --- Types ---
+        interface AppItem {
+            name: string;
+            file: string;
+            icon: string;
+            colorClass: string;
         }
-    ];
 
-    function renderPortal() {
-        const root = document.getElementById('portal-root');
-        
-        APP_DATA.forEach(section => {
-            const sectionEl = document.createElement('div');
-            sectionEl.className = 'category-section';
-            
-            sectionEl.innerHTML = `
-                <div class="category-title">${section.category}</div>
-                <div class="grid">
-                    ${section.items.map(item => `
-                        <a href="${item.file}" class="module-item">
-                            <div class="icon ${item.color}">${item.icon}</div>
-                            <div class="module-info">
-                                <span class="module-name">${item.name}</span>
-                                <span class="module-desc">${item.file.includes('.') ? item.file.split('.').pop() : 'app'}</span>
+        interface CategoryData {
+            category: string;
+            items: AppItem[];
+        }
+
+        // --- Data ---
+        const APP_DATA: CategoryData[] = [
+            {
+                category: "Development & Utilities",
+                items: [
+                    { name: "HTML to MD", file: "html_to_md.html", icon: "FileText", colorClass: "bg-blue-500" },
+                    { name: "JSON Downloader", file: "json_downloader.html", icon: "Download", colorClass: "bg-cyan-500" },
+                    { name: "PDF to MD", file: "pdf_to_md.html", icon: "FileDown", colorClass: "bg-red-500" },
+                    { name: "Thread Scraper", file: "thread_scraper.html", icon: "Globe", colorClass: "bg-indigo-500" },
+                    { name: "Legal Compiler", file: "legal_compiler.html", icon: "Scale", colorClass: "bg-gray-600" },
+                    { name: "Legal Compiler TS", file: "legal_compiler_ts.html", icon: "Scale", colorClass: "bg-purple-600" }
+                ]
+            },
+            {
+                category: "Data Science & Management",
+                items: [
+                    { name: "Data Mgmt", file: "Data_Management.html", icon: "Database", colorClass: "bg-gray-500" }
+                ]
+            },
+            {
+                category: "Financial Planning (FP1)",
+                items: [
+                    { name: "Dividend Calc", file: "FP1_Dividend_Calc.html", icon: "Calculator", colorClass: "bg-orange-500" },
+                    { name: "Corporate Tax", file: "FP1_cor_tax_matrix.html", icon: "Building2", colorClass: "bg-pink-600" },
+                    { name: "FP1 FAR", file: "FP1_FAR.html", icon: "Briefcase", colorClass: "bg-blue-600" },
+                    { name: "FP1 Pension", file: "FP1_Pension.html", icon: "Users", colorClass: "bg-green-600" },
+                    { name: "FP1 Portfolio", file: "FP1_Portfolio.html", icon: "PieChart", colorClass: "bg-purple-500" },
+                    { name: "FP1 Asset Value", file: "FP1_asset_value.html", icon: "Gem", colorClass: "bg-emerald-500" },
+                    { name: "FP1 Sell Buy", file: "FP1_sell_buy.html", icon: "TrendingUp", colorClass: "bg-amber-500" },
+                    { name: "FP1 Inheritance", file: "FP1_souzoku.html", icon: "ScrollText", colorClass: "bg-pink-500" }
+                ]
+            },
+            {
+                category: "Language",
+                items: [
+                    { name: "English Word", file: "English_Word.html", icon: "Languages", colorClass: "bg-orange-400" }
+                ]
+            }
+        ];
+
+        // --- Components ---
+        const TrafficLights = () => (
+            <div className="flex gap-2 w-[60px]">
+                <div className="w-3 h-3 rounded-full bg-[#FF5F57] border border-[#E0443E]"></div>
+                <div className="w-3 h-3 rounded-full bg-[#FEBC2E] border border-[#D89E24]"></div>
+                <div className="w-3 h-3 rounded-full bg-[#28C840] border border-[#1AAB29]"></div>
+            </div>
+        );
+
+        const ModuleItem = ({ item }: { item: AppItem }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, []);
+
+            const ext = item.file.includes('.') ? item.file.split('.').pop() : 'app';
+
+            return (
+                <a 
+                    href={item.file} 
+                    className="flex items-center p-3 bg-[#2C2C2E] border border-[#3A3A3C] rounded-xl text-gray-100 no-underline transition-all duration-200 hover:bg-[#3A3A3C] hover:border-blue-500 hover:-translate-y-[1px]"
+                >
+                    <div className={`w-9 h-9 rounded-lg mr-3 flex items-center justify-center text-white shrink-0 shadow-sm ${item.colorClass}`}>
+                        <i data-lucide={item.icon} className="w-5 h-5"></i>
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                        <span className="text-[13px] font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                            {item.name}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                            {ext}
+                        </span>
+                    </div>
+                </a>
+            );
+        };
+
+        const App = () => {
+            return (
+                <div className="w-full h-full bg-[#2C2C2E] rounded-[12px] shadow-2xl flex flex-col border border-[#3A3A3C] overflow-hidden">
+                    {/* Title Bar */}
+                    <div className="h-[52px] bg-[#2C2C2E] flex items-center px-4 border-b border-[#3A3A3C] shrink-0">
+                        <TrafficLights />
+                        <div className="flex-1 text-center text-[13px] font-semibold text-gray-400 mr-[60px]">
+                            Study Modules Portal
+                        </div>
+                    </div>
+                    
+                    {/* Content Area */}
+                    <div className="p-6 md:p-8 overflow-y-auto flex-grow bg-[#1C1C1E]">
+                        {APP_DATA.map((section, idx) => (
+                            <div key={idx} className="mb-8 last:mb-0">
+                                <div className="text-[12px] font-bold text-gray-400 uppercase tracking-wider mb-3 pl-1">
+                                    {section.category}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    {section.items.map((item, itemIdx) => (
+                                        <ModuleItem key={itemIdx} item={item} />
+                                    ))}
+                                </div>
                             </div>
-                        </a>
-                    `).join('')}
+                        ))}
+                    </div>
                 </div>
-            `;
-            root.appendChild(sectionEl);
-        });
-    }
+            );
+        };
 
-    document.addEventListener('DOMContentLoaded', renderPortal);
-</script>
-
+        const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+        root.render(<App />);
+    </script>
 </body>
 </html>
