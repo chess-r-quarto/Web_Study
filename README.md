@@ -28,8 +28,8 @@ Core data structuring and management principles.
 
 ### 🏛️ Financial Planning (FP1)
 Specialized financial planning calculators and tax matrices.
-* Dividend Calc (`FP1_Dividend_Calc.html`)
-* Corporate Tax (`FP1_cor_tax_matrix.html`)
+* FP1 Dividend Calc (`FP1_Dividend_Calc.html`)
+* FP1 Corporate Tax (`FP1_cor_tax_matrix.html`)
 * FP1 FAR (`FP1_FAR.html`)
 * FP1 Pension (`FP1_Pension.html`)
 * FP1 Portfolio (`FP1_Portfolio.html`)
