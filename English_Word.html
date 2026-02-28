@@ -45,8 +45,9 @@
     import { createRoot } from 'react-dom/client';
     import { 
       Check, X, RefreshCw, Settings, BookOpen, 
-      Clipboard, Play, UploadCloud, FileJson, RotateCcw, 
-      Minimize, Maximize, Hash, Shuffle, ListOrdered 
+      Clipboard, UploadCloud, FileJson, RotateCcw, 
+      Minimize, Maximize, Hash, Shuffle, ListOrdered, 
+      Volume2, Gamepad2, Headphones, Pause, Play
     } from 'lucide-react';
 
     interface QuestionData {
@@ -65,6 +66,7 @@
     }
 
     type QuestionCountOption = '50' | '100' | 'all';
+    type SessionMode = 'quiz' | 'reading';
 
     const DEFAULT_DATA: QuestionData[] = [
       { id: 1, word: "prospectus", pos: "Noun", meaning: "目論見書", wrong: "決算報告書", context: "Before you invest, you may want to review the Fund’s prospectus.", source: "LifePath Summary" },
@@ -107,7 +109,7 @@
     );
 
     interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-      variant?: "primary" | "secondary" | "danger" | "ghost";
+      variant?: "primary" | "secondary" | "danger" | "ghost" | "blue";
       icon?: React.ElementType;
     }
 
@@ -117,6 +119,7 @@
       const variants = {
         primary: "bg-[#629924] text-white hover:bg-[#72a332] shadow-[0_2px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none",
         secondary: "bg-[#383634] text-[#dbd9d6] hover:bg-[#454341] shadow-[0_2px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none",
+        blue: "bg-[#1b78d0] text-white hover:bg-[#2084e6] shadow-[0_2px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none",
         danger: "bg-[#cc3333] text-white hover:bg-[#d64040] shadow-[0_2px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none",
         ghost: "bg-transparent text-[#8c8c8c] hover:bg-[#383634] hover:text-[#dbd9d6]"
       };
@@ -131,6 +134,7 @@
 
     function App() {
       const [gameState, setGameState] = useState<'start' | 'editor' | 'playing' | 'result'>('start'); 
+      const [sessionMode, setSessionMode] = useState<SessionMode>('quiz');
       const [questions, setQuestions] = useState<QuestionData[]>(DEFAULT_DATA);
       const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>([]);
       const [currentIndex, setCurrentIndex] = useState(0);
@@ -141,24 +145,110 @@
       
       const [questionCount, setQuestionCount] = useState<QuestionCountOption>('all');
       const [isRandomOrder, setIsRandomOrder] = useState<boolean>(false);
+      const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
+      const [isAutoplay, setIsAutoplay] = useState<boolean>(true);
 
       const [jsonInput, setJsonInput] = useState(JSON.stringify(DEFAULT_DATA, null, 2));
       const [jsonError, setJsonError] = useState<string | null>(null);
       const fileInputRef = useRef<HTMLInputElement>(null);
+      const isAutoplayRef = useRef<boolean>(isAutoplay);
+
+      useEffect(() => {
+        isAutoplayRef.current = isAutoplay;
+      }, [isAutoplay]);
 
       const currentQuestion = activeQuestions[currentIndex];
 
+      const speak = async (text: string, lang: string, rate: number = 0.9): Promise<void> => {
+        return new Promise((resolve) => {
+          if (!window.speechSynthesis) return resolve();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = lang;
+          utterance.rate = rate;
+          utterance.onend = () => resolve();
+          utterance.onerror = () => resolve();
+          window.speechSynthesis.speak(utterance);
+        });
+      };
+
+      const playAudioSequence = async (question: QuestionData, mode: 'full' | 'word' | 'meaning_context') => {
+        if (!window.speechSynthesis) return;
+        setIsPlayingAudio(true);
+        window.speechSynthesis.cancel(); 
+
+        try {
+          if (mode === 'full' || mode === 'word') {
+            await speak(question.word, 'en-US', 0.85);
+          }
+          
+          if (mode === 'full' || mode === 'meaning_context') {
+            if (mode === 'full') await new Promise(r => setTimeout(r, 600)); 
+            await speak(question.meaning, 'ja-JP', 1.0);
+            
+            if (question.context) {
+              await new Promise(r => setTimeout(r, 800)); 
+              await speak(question.context, 'en-US', 0.9);
+            }
+          }
+        } finally {
+          setIsPlayingAudio(false);
+        }
+      };
+
+      const nextQuestion = () => {
+        setShowFeedback(false);
+        window.speechSynthesis.cancel();
+        setIsPlayingAudio(false);
+        if (currentIndex < activeQuestions.length - 1) {
+          setCurrentIndex(i => i + 1);
+        } else {
+          setGameState('result');
+        }
+      };
+
       useEffect(() => {
-        if (currentQuestion) {
+        let isActive = true;
+
+        const executeQuestionFlow = async () => {
+          if (!currentQuestion || gameState !== 'playing') return;
+
           const choices = [
             { text: currentQuestion.meaning, isCorrect: true },
             { text: currentQuestion.wrong, isCorrect: false }
           ];
           setShuffledChoices(choices.sort(() => Math.random() - 0.5));
-        }
-      }, [currentQuestion, currentIndex]);
 
-      const startSession = () => {
+          if (sessionMode === 'reading') {
+            await playAudioSequence(currentQuestion, 'full');
+            if (isActive && isAutoplayRef.current) {
+              await new Promise(r => setTimeout(r, 1200)); 
+              if (isActive && isAutoplayRef.current) {
+                nextQuestion();
+              }
+            }
+          } else if (sessionMode === 'quiz' && !showFeedback) {
+            await playAudioSequence(currentQuestion, 'word');
+          }
+        };
+
+        executeQuestionFlow();
+
+        return () => {
+          isActive = false;
+          window.speechSynthesis.cancel();
+          setIsPlayingAudio(false);
+        };
+      }, [currentQuestion, currentIndex, gameState, sessionMode]);
+
+      const handleManualAudioPlay = () => {
+        if (currentQuestion) {
+          playAudioSequence(currentQuestion, 'full');
+        }
+      };
+
+      const startSession = (mode: SessionMode) => {
+        setSessionMode(mode);
+        setIsAutoplay(true);
         let pool = [...questions];
         
         if (isRandomOrder) {
@@ -179,21 +269,17 @@
       };
 
       const handleAnswer = (isCorrect: boolean) => {
+        window.speechSynthesis.cancel();
+        setIsPlayingAudio(false);
         setLastAnswerCorrect(isCorrect);
         if (isCorrect) setScore(s => s + 1);
         setShowFeedback(true);
-      };
-
-      const nextQuestion = () => {
-        setShowFeedback(false);
-        if (currentIndex < activeQuestions.length - 1) {
-          setCurrentIndex(i => i + 1);
-        } else {
-          setGameState('result');
-        }
+        setTimeout(() => playAudioSequence(currentQuestion, 'meaning_context'), 50);
       };
 
       const returnToStart = () => {
+        window.speechSynthesis.cancel();
+        setIsPlayingAudio(false);
         setGameState('start');
       };
 
@@ -325,9 +411,14 @@
                   </div>
 
                   <div className="space-y-3">
-                    <Button onClick={startSession} className="w-full py-4 text-lg" icon={Play}>
-                      Play
-                    </Button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Button onClick={() => startSession('quiz')} className="w-full py-4 text-base" icon={Gamepad2}>
+                        Quiz
+                      </Button>
+                      <Button onClick={() => startSession('reading')} variant="blue" className="w-full py-4 text-base" icon={Headphones}>
+                        Reading
+                      </Button>
+                    </div>
                     <Button variant="secondary" onClick={() => setGameState('editor')} className="w-full py-3" icon={Settings}>
                       Import JSON
                     </Button>
@@ -401,18 +492,36 @@
           <div className="min-h-screen flex items-center justify-center p-4">
             <BaseWrapper title="Session Complete" className="h-[450px]">
               <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-8 text-center">
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-bold text-[#8c8c8c] uppercase tracking-widest">Accuracy</h2>
-                  <div className="text-6xl font-bold text-[#dbd9d6]">
-                    {Math.round((score / activeQuestions.length) * 100)}%
-                  </div>
-                </div>
-
-                <div className="bg-[#1b1a19] border border-[#383634] px-8 py-4 rounded-sm">
-                  <p className="text-lg text-[#dbd9d6]">
-                    <span className="text-[#629924] font-bold">{score}</span> correct out of <span className="font-bold">{activeQuestions.length}</span>
-                  </p>
-                </div>
+                
+                {sessionMode === 'quiz' ? (
+                  <>
+                    <div className="space-y-2">
+                      <h2 className="text-2xl font-bold text-[#8c8c8c] uppercase tracking-widest">Accuracy</h2>
+                      <div className="text-6xl font-bold text-[#dbd9d6]">
+                        {Math.round((score / activeQuestions.length) * 100)}%
+                      </div>
+                    </div>
+                    <div className="bg-[#1b1a19] border border-[#383634] px-8 py-4 rounded-sm">
+                      <p className="text-lg text-[#dbd9d6]">
+                        <span className="text-[#629924] font-bold">{score}</span> correct out of <span className="font-bold">{activeQuestions.length}</span>
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <h2 className="text-2xl font-bold text-[#8c8c8c] uppercase tracking-widest">Words Read</h2>
+                      <div className="text-6xl font-bold text-[#dbd9d6]">
+                        {activeQuestions.length}
+                      </div>
+                    </div>
+                    <div className="bg-[#1b1a19] border border-[#383634] px-8 py-4 rounded-sm">
+                      <p className="text-lg text-[#dbd9d6]">
+                        Reading session completed.
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 <div className="pt-8 w-full max-w-xs">
                   <Button onClick={returnToStart} className="w-full py-4" icon={RefreshCw}>
@@ -427,10 +536,10 @@
 
       return (
         <div className="min-h-screen flex items-center justify-center p-4">
-          <BaseWrapper title={`Question ${currentIndex + 1} / ${activeQuestions.length}`} className="h-[550px]">
+          <BaseWrapper title={`${sessionMode === 'quiz' ? 'Quiz' : 'Reading'} : ${currentIndex + 1} / ${activeQuestions.length}`} className="h-[550px]">
             <div className="h-1 w-full bg-[#1b1a19]">
               <div 
-                className="h-full bg-[#1b78d0] transition-all duration-300"
+                className={`h-full transition-all duration-300 ${sessionMode === 'reading' ? 'bg-[#1b78d0]' : 'bg-[#629924]'}`}
                 style={{ width: `${((currentIndex) / activeQuestions.length) * 100}%` }}
               />
             </div>
@@ -442,8 +551,18 @@
                   <span>{currentQuestion.source}</span>
                 </div>
                 
-                <div className="mb-4 px-3 py-1 bg-[#1b1a19] border border-[#383634] rounded-sm text-[#8c8c8c] text-xs font-bold uppercase tracking-widest">
-                  {currentQuestion.pos}
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="px-3 py-1 bg-[#1b1a19] border border-[#383634] rounded-sm text-[#8c8c8c] text-xs font-bold uppercase tracking-widest">
+                    {currentQuestion.pos}
+                  </div>
+                  <button 
+                    onClick={handleManualAudioPlay}
+                    disabled={isPlayingAudio}
+                    className="p-1.5 text-[#8c8c8c] hover:text-[#dbd9d6] hover:bg-[#383634] rounded-sm transition-colors disabled:opacity-50"
+                    title="Play Audio"
+                  >
+                    <Volume2 size={18} />
+                  </button>
                 </div>
 
                 <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight text-center">
@@ -452,31 +571,13 @@
               </div>
 
               <div className="h-64 bg-[#1b1a19] border-t border-[#383634] relative">
-                {!showFeedback ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 h-full">
-                    {shuffledChoices.map((choice, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleAnswer(choice.isCorrect)}
-                        className="bg-[#262421] border border-[#383634] hover:bg-[#383634] hover:border-[#8c8c8c] text-xl font-bold text-[#dbd9d6] rounded-sm transition-colors active:bg-[#454341] flex items-center justify-center"
-                      >
-                        {choice.text}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
+                {sessionMode === 'reading' ? (
                   <div className="absolute inset-0 flex flex-col p-6 animate-in fade-in duration-200">
                     <div className="flex-1 flex flex-col justify-center items-center text-center space-y-4">
-                      <div className={`text-2xl font-bold flex items-center gap-2 ${lastAnswerCorrect ? 'text-[#629924]' : 'text-[#cc3333]'}`}>
-                        {lastAnswerCorrect ? <Check size={32} /> : <X size={32} />}
-                        {lastAnswerCorrect ? 'Correct' : 'Inaccuracy'}
-                      </div>
-                      
-                      <div className="text-xl">
-                        <span className="text-[#8c8c8c]">Meaning: </span>
+                      <div className="text-2xl">
+                        <span className="text-[#8c8c8c] text-lg">Meaning: </span>
                         <span className="text-white font-bold">{currentQuestion.meaning}</span>
                       </div>
-
                       {currentQuestion.context && (
                         <div className="text-[#dbd9d6] italic max-w-lg mt-4 px-4 border-l-4 border-[#383634]">
                           {currentQuestion.context}
@@ -484,12 +585,64 @@
                       )}
                     </div>
                     
-                    <div className="mt-auto">
-                      <Button onClick={nextQuestion} className="w-full py-4 text-lg">
-                        Next
+                    <div className="mt-auto flex gap-3">
+                      <Button 
+                        onClick={() => setIsAutoplay(!isAutoplay)} 
+                        variant={isAutoplay ? "secondary" : "blue"} 
+                        className="flex-1 py-4 text-lg"
+                        icon={isAutoplay ? Pause : Play}
+                      >
+                        {isAutoplay ? "Pause Auto-play" : "Resume Auto-play"}
                       </Button>
+                      {!isAutoplay && (
+                        <Button onClick={nextQuestion} variant="secondary" className="flex-1 py-4 text-lg">
+                          Next
+                        </Button>
+                      )}
                     </div>
                   </div>
+                ) : (
+                  <>
+                    {!showFeedback ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 h-full">
+                        {shuffledChoices.map((choice, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleAnswer(choice.isCorrect)}
+                            className="bg-[#262421] border border-[#383634] hover:bg-[#383634] hover:border-[#8c8c8c] text-xl font-bold text-[#dbd9d6] rounded-sm transition-colors active:bg-[#454341] flex items-center justify-center"
+                          >
+                            {choice.text}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col p-6 animate-in fade-in duration-200">
+                        <div className="flex-1 flex flex-col justify-center items-center text-center space-y-4">
+                          <div className={`text-2xl font-bold flex items-center gap-2 ${lastAnswerCorrect ? 'text-[#629924]' : 'text-[#cc3333]'}`}>
+                            {lastAnswerCorrect ? <Check size={32} /> : <X size={32} />}
+                            {lastAnswerCorrect ? 'Correct' : 'Inaccuracy'}
+                          </div>
+                          
+                          <div className="text-xl">
+                            <span className="text-[#8c8c8c]">Meaning: </span>
+                            <span className="text-white font-bold">{currentQuestion.meaning}</span>
+                          </div>
+
+                          {currentQuestion.context && (
+                            <div className="text-[#dbd9d6] italic max-w-lg mt-4 px-4 border-l-4 border-[#383634]">
+                              {currentQuestion.context}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="mt-auto">
+                          <Button onClick={nextQuestion} className="w-full py-4 text-lg">
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
