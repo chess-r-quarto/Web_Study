@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post to JSON Converter</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Babel TSX Preset Registration -->
+    <script>
+        Babel.registerPreset('tsx', {
+            presets: [
+                [Babel.availablePresets['typescript'], { isTSX: true, allExtensions: true }],
+                Babel.availablePresets['react']
+            ]
+        });
+    </script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans p-6 min-h-screen">
+    <div id="root" class="max-w-6xl mx-auto"></div>
+
+    <script type="text/babel" data-presets="tsx">
+        const { useState, useCallback } = React;
+
+        interface Post {
+            id: number;
+            accountName: string;
+            postDate: string;
+            postBody: string;
+        }
+
+        const App = () => {
+            const [input, setInput] = useState<string>('');
+            const [output, setOutput] = useState<string>('');
+            const [copied, setCopied] = useState<boolean>(false);
+            const [filename, setFilename] = useState<string>('posts');
+
+            const convertToJson = useCallback(() => {
+                const lines = input.split('\n');
+                const posts: Post[] = [];
+                let currentPost: Partial<Post> | null = null;
+                let bodyLines: string[] = [];
+                let idCounter = 1;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line1 = lines[i]?.trim();
+                    const line2 = lines[i + 1]?.trim();
+                    const line3 = lines[i + 2]?.trim();
+                    const line4 = lines[i + 3]?.trim();
+
+                    if (line2?.startsWith('@') && (line3 === '·' || line3 === '・')) {
+                        if (currentPost) {
+                            currentPost.postBody = bodyLines.join('\n').trim();
+                            posts.push(currentPost as Post);
+                        }
+
+                        currentPost = {
+                            id: idCounter++,
+                            accountName: `${line1} ${line2}`,
+                            postDate: line4 || '',
+                        };
+                        bodyLines = [];
+                        i += 3;
+                    } else {
+                        if (currentPost) {
+                            bodyLines.push(lines[i]);
+                        }
+                    }
+                }
+
+                if (currentPost) {
+                    currentPost.postBody = bodyLines.join('\n').trim();
+                    posts.push(currentPost as Post);
+                }
+
+                setOutput(JSON.stringify(posts, null, 2));
+                setCopied(false);
+            }, [input]);
+
+            const copyToClipboard = useCallback(async () => {
+                if (!output) return;
+                try {
+                    await navigator.clipboard.writeText(output);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                } catch (err) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = output;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                    } catch (e) {
+                        console.error('Copy failed', e);
+                    }
+                    document.body.removeChild(textArea);
+                }
+            }, [output]);
+
+            const downloadJson = useCallback(() => {
+                if (!output) return;
+                const blob = new Blob([output], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${filename.trim() || 'export'}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, [output, filename]);
+
+            return (
+                <div class="flex flex-col gap-6">
+                    <header>
+                        <h1 class="text-2xl font-bold text-gray-100">Post to JSON Converter</h1>
+                        <p class="text-sm text-gray-400 mt-1">Paste your text and click convert.</p>
+                    </header>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-[75vh]">
+                        <div class="flex flex-col gap-2 h-full">
+                            <label class="font-semibold text-gray-300">Input (Text)</label>
+                            <textarea
+                                class="flex-1 w-full p-4 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none font-mono text-sm placeholder-gray-500"
+                                placeholder="suimon&#10;@floodgate_fan&#10;·&#10;Feb 11, 2019&#10;Post content here..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                            />
+                            <button
+                                onClick={convertToJson}
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm"
+                            >
+                                Convert to JSON
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col gap-2 h-full">
+                            <div class="flex justify-between items-center">
+                                <label class="font-semibold text-gray-300">Output (JSON)</label>
+                                <button
+                                    onClick={copyToClipboard}
+                                    disabled={!output}
+                                    class={`text-sm py-1 px-3 rounded-md transition-colors ${
+                                        copied 
+                                            ? 'bg-green-900 text-green-300 border border-green-700'
+                                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed'
+                                    }`}
+                                >
+                                    {copied ? 'Copied!' : 'Copy'}
+                                </button>
+                            </div>
+                            <textarea
+                                class="flex-1 w-full p-4 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg shadow-sm font-mono text-sm resize-none"
+                                readOnly
+                                value={output}
+                                placeholder="Converted JSON will appear here"
+                            />
+                            <div class="flex items-center gap-2 mt-1">
+                                <input
+                                    type="text"
+                                    value={filename}
+                                    onChange={(e) => setFilename(e.target.value)}
+                                    placeholder="filename"
+                                    class="flex-1 p-2 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                                />
+                                <span class="text-gray-400 font-mono text-sm">.json</span>
+                                <button
+                                    onClick={downloadJson}
+                                    disabled={!output}
+                                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 disabled:border disabled:border-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-colors text-sm"
+                                >
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            const root = ReactDOM.createRoot(rootElement);
+            root.render(<App />);
+        }
+    </script>
+</body>
+</html>
