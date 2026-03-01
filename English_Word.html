@@ -147,27 +147,95 @@
       const [isRandomOrder, setIsRandomOrder] = useState<boolean>(false);
       const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
       const [isAutoplay, setIsAutoplay] = useState<boolean>(true);
+      const [voicesReady, setVoicesReady] = useState<boolean>(false);
 
       const [jsonInput, setJsonInput] = useState(JSON.stringify(DEFAULT_DATA, null, 2));
       const [jsonError, setJsonError] = useState<string | null>(null);
+      
       const fileInputRef = useRef<HTMLInputElement>(null);
       const isAutoplayRef = useRef<boolean>(isAutoplay);
+      const audioRef = useRef<HTMLAudioElement | null>(null);
 
       useEffect(() => {
         isAutoplayRef.current = isAutoplay;
       }, [isAutoplay]);
 
+      useEffect(() => {
+        // 音声リストの初期化トリガー
+        if (window.speechSynthesis) {
+          window.speechSynthesis.onvoiceschanged = () => setVoicesReady(true);
+          window.speechSynthesis.getVoices();
+        }
+
+        const audio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+        audio.loop = true;
+        audioRef.current = audio;
+        return () => {
+          audio.pause();
+        };
+      }, []);
+
+      useEffect(() => {
+        if (gameState !== 'playing' && audioRef.current) {
+          audioRef.current.pause();
+        }
+      }, [gameState]);
+
       const currentQuestion = activeQuestions[currentIndex];
+
+      // 高品質なネイティブ音声を優先的に取得する関数
+      const getOptimalVoice = (lang: string) => {
+        if (!window.speechSynthesis) return null;
+        const voices = window.speechSynthesis.getVoices();
+        
+        if (lang.startsWith('en')) {
+          return voices.find(v => v.name === 'Google US English') ||
+                 voices.find(v => v.name === 'Samantha') ||
+                 voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') || 
+                 null;
+        }
+        if (lang.startsWith('ja')) {
+          return voices.find(v => v.name === 'Google 日本語') ||
+                 voices.find(v => v.name === 'Kyoko') ||
+                 voices.find(v => v.lang === 'ja-JP') || 
+                 null;
+        }
+        return voices.find(v => v.lang === lang) || null;
+      };
 
       const speak = async (text: string, lang: string, rate: number = 0.9): Promise<void> => {
         return new Promise((resolve) => {
           if (!window.speechSynthesis) return resolve();
+          
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = lang;
           utterance.rate = rate;
-          utterance.onend = () => resolve();
-          utterance.onerror = () => resolve();
+          
+          const voice = getOptimalVoice(lang);
+          if (voice) utterance.voice = voice;
+
+          // onendが発火しないバグ対策のフォールバックタイマー (文字数 + ゆとり)
+          const fallbackTimeout = setTimeout(() => {
+            resolve();
+          }, Math.max(4000, text.length * 200));
+
+          utterance.onend = () => {
+            clearTimeout(fallbackTimeout);
+            resolve();
+          };
+          
+          utterance.onerror = (e) => {
+            console.warn('SpeechSynthesis Error:', e);
+            clearTimeout(fallbackTimeout);
+            resolve();
+          };
+
           window.speechSynthesis.speak(utterance);
+
+          // iOS Safari等のための強制resume処理
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
         });
       };
 
@@ -195,16 +263,15 @@
         }
       };
 
-      const nextQuestion = () => {
-        setShowFeedback(false);
-        window.speechSynthesis.cancel();
-        setIsPlayingAudio(false);
-        if (currentIndex < activeQuestions.length - 1) {
-          setCurrentIndex(i => i + 1);
-        } else {
-          setGameState('result');
+      useEffect(() => {
+        if (currentQuestion && gameState === 'playing') {
+          const choices = [
+            { text: currentQuestion.meaning, isCorrect: true },
+            { text: currentQuestion.wrong, isCorrect: false }
+          ];
+          setShuffledChoices(choices.sort(() => Math.random() - 0.5));
         }
-      };
+      }, [currentQuestion, gameState]);
 
       useEffect(() => {
         let isActive = true;
@@ -212,18 +279,14 @@
         const executeQuestionFlow = async () => {
           if (!currentQuestion || gameState !== 'playing') return;
 
-          const choices = [
-            { text: currentQuestion.meaning, isCorrect: true },
-            { text: currentQuestion.wrong, isCorrect: false }
-          ];
-          setShuffledChoices(choices.sort(() => Math.random() - 0.5));
-
           if (sessionMode === 'reading') {
-            await playAudioSequence(currentQuestion, 'full');
-            if (isActive && isAutoplayRef.current) {
-              await new Promise(r => setTimeout(r, 1200)); 
+            if (isAutoplay) {
+              await playAudioSequence(currentQuestion, 'full');
               if (isActive && isAutoplayRef.current) {
-                nextQuestion();
+                await new Promise(r => setTimeout(r, 1200)); 
+                if (isActive && isAutoplayRef.current) {
+                  nextQuestion();
+                }
               }
             }
           } else if (sessionMode === 'quiz' && !showFeedback) {
@@ -238,7 +301,51 @@
           window.speechSynthesis.cancel();
           setIsPlayingAudio(false);
         };
-      }, [currentQuestion, currentIndex, gameState, sessionMode]);
+      }, [currentQuestion, currentIndex, gameState, sessionMode, isAutoplay, showFeedback]);
+
+      useEffect(() => {
+        if ('mediaSession' in navigator && currentQuestion && gameState === 'playing') {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: currentQuestion.word,
+            artist: currentQuestion.meaning,
+            album: 'Vocab.app'
+          });
+
+          navigator.mediaSession.setActionHandler('play', () => {
+            setIsAutoplay(true);
+            if (audioRef.current && audioRef.current.paused) {
+              audioRef.current.play().catch(() => {});
+            }
+          });
+
+          navigator.mediaSession.setActionHandler('pause', () => {
+            setIsAutoplay(false);
+          });
+
+          navigator.mediaSession.setActionHandler('nexttrack', () => {
+            nextQuestion();
+          });
+
+          navigator.mediaSession.setActionHandler('previoustrack', () => {
+            if (currentIndex > 0) {
+              window.speechSynthesis.cancel();
+              setShowFeedback(false);
+              setCurrentIndex(i => i - 1);
+            }
+          });
+        }
+      }, [currentQuestion, gameState, currentIndex]);
+
+      const nextQuestion = () => {
+        setShowFeedback(false);
+        window.speechSynthesis.cancel();
+        setIsPlayingAudio(false);
+        if (currentIndex < activeQuestions.length - 1) {
+          setCurrentIndex(i => i + 1);
+        } else {
+          setGameState('result');
+        }
+      };
 
       const handleManualAudioPlay = () => {
         if (currentQuestion) {
@@ -249,6 +356,10 @@
       const startSession = (mode: SessionMode) => {
         setSessionMode(mode);
         setIsAutoplay(true);
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => console.warn("MediaSession dummy audio requires interaction", e));
+        }
+
         let pool = [...questions];
         
         if (isRandomOrder) {
